@@ -1,0 +1,30 @@
+                .setcpu "6502"
+
+                .include "zeropage.inc65"
+                .include "display.inc65"
+
+                .segment "VECTORS"
+                .word nmi
+                .word reset
+                .word irq
+
+                .code
+
+reset:          jmp main
+nmi:            rti
+irq:            rti
+
+main:
+                jsr ssd1305_init
+
+                lda #<image             ; put pointer to image in memory R0
+                sta R0
+                lda #>image
+                sta R0 + 1
+
+                jsr ssd1305_display
+
+loop:                                   ; Loop indefinately
+                jmp loop
+
+image:          .byte $01, $02, $03

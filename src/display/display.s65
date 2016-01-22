@@ -1,0 +1,130 @@
+                  .setcpu "6502"
+
+                  .include "zeropage.inc65"
+
+                  SSD1305_COMMAND = $4800
+                  SSD1305_DATA = $4801
+
+                  SSD1305_SETLOWCOLUMN = $00
+                  SSD1305_SETHIGHCOLUMN = $10
+                  SSD1305_MEMORYMODE = $20
+                  SSD1305_SETCOLADDR = $21
+                  SSD1305_SETPAGEADDR = $22
+                  SSD1305_SETSTARTLINE = $40
+
+                  SSD1305_SETCONTRAST = $81
+                  SSD1305_SETBRIGHTNESS = $82
+
+                  SSD1305_SETLUT = $91
+
+                  SSD1305_SEGREMAP = $A0
+                  SSD1305_DISPLAYALLON_RESUME = $A4
+                  SSD1305_DISPLAYALLON = $A5
+                  SSD1305_NORMALDISPLAY = $A6
+                  SSD1305_INVERTDISPLAY = $A7
+                  SSD1305_SETMULTIPLEX = $A8
+                  SSD1305_DISPLAYDIM = $AC
+                  SSD1305_MASTERCONFIG = $AD
+                  SSD1305_DISPLAYOFF = $AE
+                  SSD1305_DISPLAYON = $AF
+
+                  SSD1305_SETPAGESTART = $B0
+
+                  SSD1305_COMSCANINC = $C0
+                  SSD1305_COMSCANDEC = $C8
+                  SSD1305_SETDISPLAYOFFSET = $D3
+                  SSD1305_SETDISPLAYCLOCKDIV = $D5
+                  SSD1305_SETAREACOLOR = $D8
+                  SSD1305_SETPRECHARGE = $D9
+                  SSD1305_SETCOMPINS = $DA
+                  SSD1305_SETVCOMLEVEL = $DB
+
+                  .export ssd1305_init
+                  .export ssd1305_display
+
+                  .macro dc cmd
+                    lda #cmd
+                    sta SSD1305_COMMAND
+                  .endmacro
+
+                  .macro dco cmd, offset
+                    lda #cmd | offset
+                    sta SSD1305_COMMAND
+                  .endmacro
+
+                  .code
+ssd1305_init:
+                  dc SSD1305_DISPLAYOFF              ; $AE
+                  dco SSD1305_SETLOWCOLUMN, $4       ; low col = 0  (This doesn't seem right)
+                  dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 0
+                  dco SSD1305_SETSTARTLINE, $0       ; line #0
+                  dc $2E                             ; Stop scrolling
+                  dc SSD1305_SETCONTRAST             ; $81
+                  dc $32
+                  dc SSD1305_SETBRIGHTNESS           ; $82
+                  dc $80
+                  dco SSD1305_SEGREMAP, $1
+                  dc SSD1305_NORMALDISPLAY           ; $A6
+                  dc SSD1305_SETMULTIPLEX            ; $A8
+                  dc $3F                             ; 1/64
+                  dc SSD1305_MASTERCONFIG
+                  dc $8e                             ; external vcc supply
+                  dc SSD1305_COMSCANDEC
+                  dc SSD1305_SETDISPLAYOFFSET        ; $D3
+                  dc $40
+                  dc SSD1305_SETDISPLAYCLOCKDIV      ; $D5
+                  dc $f0
+                  dc SSD1305_SETAREACOLOR
+                  dc $05
+                  dc SSD1305_SETPRECHARGE            ; $d9
+                  dc $F1
+                  dc SSD1305_SETCOMPINS              ; $DA
+                  dc $12
+                  dc SSD1305_SETLUT
+                  dc $3F
+                  dc $3F
+                  dc $3F
+                  dc $3F
+                  dc SSD1305_DISPLAYON
+                  rts
+
+; Drawn from R0, destructs R0
+ssd1305_display:
+                  ldx #$0
+                  ldy #$0
+
+@next_page_group: lda SSD1305_SETPAGESTART  ; even pages (0, 2, 4, 6)
+                  stx R1
+                  adc R1
+                  sta SSD1305_COMMAND       ; Set Page
+                  dc $00
+                  dc $10
+
+                  ; loop y < 128
+@byte_loop1:      lda (R0), y
+                  sta SSD1305_DATA
+                  iny
+                  sty R1
+                  lda #128
+                  bit R1
+                  beq @byte_loop1
+                  ; odd pages (1, 3, 5, 7)
+                  inx
+                  lda SSD1305_SETPAGESTART
+                  stx R1
+                  adc R1
+                  sta SSD1305_COMMAND       ; Set Page
+                  dc $00
+                  dc $10
+                  ; loop y < 256
+@byte_loop2:      lda (R0), y
+                  sta SSD1305_DATA
+                  iny
+                  bne @byte_loop2
+                  inc R0 + 1                ; update pointer to the next block of 256
+                  inx
+                  stx R1
+                  lda #8
+                  bit R1
+                  beq @next_page_group
+                  rts
