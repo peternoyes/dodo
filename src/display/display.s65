@@ -48,16 +48,19 @@
                   .endmacro
 
                   .macro dco cmd, offset
-                    lda #cmd | offset
+                    lda #offset
+                    sta R1
+                    lda #cmd
+                    adc R1
                     sta SSD1305_COMMAND
                   .endmacro
 
                   .code
 ssd1305_init:
                   dc SSD1305_DISPLAYOFF              ; $AE
-                  dco SSD1305_SETLOWCOLUMN, $4       ; low col = 0  (This doesn't seem right)
-                  dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 0
-                  dco SSD1305_SETSTARTLINE, $0       ; line #0
+                  ;dco SSD1305_SETLOWCOLUMN, $4       ; low col = 0  (This doesn't seem right)
+                  ;dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 0
+                  ;dco SSD1305_SETSTARTLINE, $0       ; line #0
                   dc $2E                             ; Stop scrolling
                   dc SSD1305_SETCONTRAST             ; $81
                   dc $32
@@ -93,7 +96,7 @@ ssd1305_display:
                   ldx #$0
                   ldy #$0
 
-@next_page_group: lda SSD1305_SETPAGESTART  ; even pages (0, 2, 4, 6)
+@next_page_group: lda #SSD1305_SETPAGESTART  ; even pages (0, 2, 4, 6)
                   stx R1
                   adc R1
                   sta SSD1305_COMMAND       ; Set Page
@@ -110,7 +113,7 @@ ssd1305_display:
                   beq @byte_loop1
                   ; odd pages (1, 3, 5, 7)
                   inx
-                  lda SSD1305_SETPAGESTART
+                  lda #SSD1305_SETPAGESTART
                   stx R1
                   adc R1
                   sta SSD1305_COMMAND       ; Set Page
