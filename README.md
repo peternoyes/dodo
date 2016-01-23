@@ -1,5 +1,7 @@
 # Dodo
 
+![Dodo Image](dodo.jpg)
+
 Dodo is homebrew 6502 SBC computer. The name is inspired from the book DroidMaker where it is revealed that the first version Lucasfilm's EditDroid was also named Dodo. Like the first EditDroid, Dodo is extinct in its design.
 
 While obviously not a practical computer in today's world, building Dodo is still a fun and challenging learning experience.
