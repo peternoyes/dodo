@@ -1,4 +1,4 @@
-SOURCES = display.s65 main.s65
+SOURCES = main.s65 display.s65
 
 %.o: %.s65
 	ca65 -o $@ -l $(@:.o=.lst) $<
