@@ -1,2 +1,2 @@
 .import ssd1305_init
-.import ssd1305_display
+.import _display

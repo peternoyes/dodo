@@ -1,3 +1,6 @@
 *.o
 *.lst
+*.map
+*.s
 firmware
+ramtest
