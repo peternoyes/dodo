@@ -40,7 +40,7 @@
                   SSD1305_SETVCOMLEVEL = $DB
 
                   .export ssd1305_init
-                  .export ssd1305_display
+                  .export _display                  
 
                   .macro dc cmd
                     lda #cmd
@@ -58,9 +58,9 @@
                   .code
 ssd1305_init:
                   dc SSD1305_DISPLAYOFF              ; $AE
-                  ;dco SSD1305_SETLOWCOLUMN, $4       ; low col = 0  (This doesn't seem right)
-                  ;dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 0
-                  ;dco SSD1305_SETSTARTLINE, $0       ; line #0
+                  dco SSD1305_SETLOWCOLUMN, $4       ; low col = 0  (This doesn't seem right)
+                  dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 0
+                  dco SSD1305_SETSTARTLINE, $0       ; line #0
                   dc $2E                             ; Stop scrolling
                   dc SSD1305_SETCONTRAST             ; $81
                   dc $32
@@ -91,8 +91,14 @@ ssd1305_init:
                   dc SSD1305_DISPLAYON
                   rts
 
-; Drawn from R0, destructs R0
-ssd1305_display:
+; Drawn from $3C00
+_display:              
+                  clc    
+                  lda #$00
+                  sta R0
+                  lda #$3C
+                  sta R0 + 1
+
                   ldx #$0
                   ldy #$0
 

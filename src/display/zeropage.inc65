@@ -1,2 +1,15 @@
-R0 = $02
-R1 = $04
+.globalzp sp
+.globalzp sreg
+.globalzp regsave
+.globalzp regbank
+.globalzp tmp1
+.globalzp tmp2
+.globalzp tmp3
+.globalzp tmp4
+.globalzp tmpstack
+.globalzp ptr1
+.globalzp ptr2
+.globalzp ptr3
+.globalzp ptr4
+.globalzp R0
+.globalzp R1

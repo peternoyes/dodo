@@ -1,0 +1,34 @@
+.include "zeropage.inc65"
+
+				.export _led_on
+				.export _led_off
+
+                PORTB = $6000
+                PORTA = $6001
+                DDRB  = $6002
+                DDRA  = $6003
+                T1CL  = $6004
+                T1CH  = $6005
+                T1LL  = $6006
+                T1LH  = $6007
+                T2LL  = $6008
+                T2CL  = $6008
+                T2CH  = $6009
+                SR    = $600A
+                ACR   = $600B
+                PCR   = $600C
+                IFR   = $600D
+                IER   = $600E
+                ORAX  = $600F
+
+				.code
+
+_led_on:
+			ldx #%11111111
+            stx PORTA  
+			rts
+
+_led_off:
+			ldx #%00000000
+            stx PORTA  
+			rts
