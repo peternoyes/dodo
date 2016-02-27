@@ -2,6 +2,7 @@
 
 				.export _led_on
 				.export _led_off
+                .export setup_timer
 
                 PORTB = $6000
                 PORTA = $6001
@@ -11,7 +12,6 @@
                 T1CH  = $6005
                 T1LL  = $6006
                 T1LH  = $6007
-                T2LL  = $6008
                 T2CL  = $6008
                 T2CH  = $6009
                 SR    = $600A
@@ -32,3 +32,23 @@ _led_off:
 			ldx #%00000000
             stx PORTA  
 			rts
+
+
+setup_timer:
+            lda #0
+            sta TOG
+
+            lda #$4E
+            sta T1CL
+            lda #$C3
+            sta T1CH
+
+            lda ACR
+            and #%01111111
+            ora #%01000000
+            sta ACR
+
+            lda #%11000000
+            sta IER
+            rts
+            

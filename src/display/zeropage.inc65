@@ -13,3 +13,4 @@
 .globalzp ptr4
 .globalzp R0
 .globalzp R1
+.globalzp TOG

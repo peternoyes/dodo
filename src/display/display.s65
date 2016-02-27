@@ -93,7 +93,8 @@ ssd1305_init:
 
 ; Drawn from $3C00
 _display:              
-                  clc    
+                  clc
+                  clv   
                   lda #$00
                   sta R0
                   lda #$3C

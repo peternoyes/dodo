@@ -1,6 +1,7 @@
                 .include "zeropage.inc65"
                 .include "display.inc65"
                 .include "util.inc65"
+                .include "led.inc65"
 
                 .setcpu "6502"
 
@@ -16,7 +17,6 @@
                 T1CH  = $6005
                 T1LL  = $6006
                 T1LH  = $6007
-                T2LL  = $6008
                 T2CL  = $6008
                 T2CH  = $6009
                 SR    = $600A
@@ -45,10 +45,29 @@
                 .segment "STARTUP"
 
 nmi:            rti
-irq:            rti
+irq:                    
+                pha
+                bit T1CL
+                clc
+                cld
+                clv
+                lda #0
+                cmp TOG
+                beq @on
+                dec TOG
+                lda #%00000000
+                sta PORTA  
+                jmp @done
+@on:
+                inc TOG
+                lda #%11111111
+                sta PORTA  
+@done:
+                pla
+                rti
 
 _init:
-                sei
+                sei                
                 cld
                 ldx #$ff
                 txs
@@ -66,9 +85,13 @@ _init:
                 sta DDRA
                 clv
                 ldx #%11111111
-                stx PORTA                
+                stx PORTA      
+
 
                 jsr ssd1305_init
+
+                jsr setup_timer
+                cli
 
                 ;lda #<everett             ; put pointer to image in memory R0
                 ;sta R0
