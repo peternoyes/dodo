@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "led.h"
+#include "io.h"
 #include "util.h"
 #include "display.h"
 
@@ -58,11 +58,11 @@ void drawPlayfield() {
 	}
 }
 
-void clearSprite() {
-	unsigned char p1 = _char_y/8;
-	unsigned char p2 = (_char_y+15)/8;
-	unsigned char i1 = _char_x/8;
-	unsigned char i2 = (_char_x+7)/8;
+void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h) {
+	unsigned char p1 = y/8;
+	unsigned char p2 = (y+h-1)/8;
+	unsigned char i1 = x/8;
+	unsigned char i2 = (x+w-1)/8;
 	unsigned char p, i, l, o, v = 0;
 	unsigned char* vmem = 0;
 
@@ -82,42 +82,72 @@ void clearSprite() {
 
 }
 
-void drawSprite(unsigned char* sprite) {
-	unsigned char p = _char_y/8;
+void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h) {
+	unsigned char p = y/8;
+	unsigned char yoff = y%8;
+	unsigned char yoff_inv = 8-yoff;
 	unsigned char i = 0;
+	unsigned char il = 0;
+	unsigned char yp = 0;
+	unsigned char last = 0;
 
 	unsigned char* vmem = VIDEO_MEM; // + _char_x + (p*128);
 	for (i = 0; i < p; ++i) {
 		vmem += 128;
 	}
-	vmem += _char_x;
+	vmem += x;
 	
-	for (i = 0; i < 8; ++i) {
-		*vmem = sprite[i];
-		vmem++;
+	i = 0;
+	for (yp = 0; yp < h; yp += 8) {
+		il += w;
+		last = 0;
+		for (; i < il; ++i) {
+			if (yoff > 0 && yp > 0) {
+				last = sprite[i - w] >> yoff_inv;
+			}
+
+			*vmem |= (sprite[i] << yoff) + last;
+			vmem++;
+		}
+
+		vmem += (128 - w);
 	}
 
-	vmem += 120;
-
-	for (i = 8; i < 16; ++i) {
-		*vmem |= sprite[i];
-		vmem++;
+	// Go through last set of sprite data becasue it spills over into next page of VMEM
+	if (yoff > 0) {
+		i -= w;
+		for (; i < il; ++i) {
+			*vmem |= (sprite[i] >> yoff_inv);
+			++vmem;
+		}
 	}
 }
 
-
 int main() {
 	unsigned char* sprite = (unsigned char*)_char2;
+	unsigned char keys = 0;
 
 	drawPlayfield();
 
 	for (;;) {
-		drawSprite(sprite);
+		drawSprite(sprite, _char_x, _char_y, 8, 16);
 		display();
 
-		clearSprite();
+		clearSprite(_char_x, _char_y, 8, 16);
 
-		_char_x += 3;
+		keys = *((unsigned char*)0x6001);
+		if ((keys & 1) == 0) {
+			_char_y -= 1;
+		}
+		else if ((keys & 2) == 0) {
+			_char_y += 1;
+		}
+		else if ((keys & 4) == 0) {
+			_char_x -= 3;
+		} 
+		else if ((keys & 8) == 0) {
+			_char_x += 3;
+		}
 
 		if ((_char_x % 2) == 1) {
 			sprite = (unsigned char*)_char3;
@@ -129,12 +159,14 @@ int main() {
 		if (_char_x > 104) {
 			_char_x = 16;
 		}
+		else if (_char_x < 8) {
+			_char_x = 104;
+		}
 
-		delay_ms(255);
-
+		led_on();
+		wait();
+		led_off();
 	}
-
-	for (;;) { }
 
 	return 0;
 }

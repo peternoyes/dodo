@@ -3,5 +3,6 @@
 
 extern void __fastcall__ led_on(void);
 extern void __fastcall__ led_off(void);
+extern void __fastcall__ wait(void);
 
 #endif

@@ -1,7 +1,7 @@
                 .include "zeropage.inc65"
                 .include "display.inc65"
                 .include "util.inc65"
-                .include "led.inc65"
+                .include "io.inc65"
 
                 .setcpu "6502"
 
@@ -9,27 +9,11 @@
                 .export _init
                 .export _exit
 
-                PORTB = $6000
-                PORTA = $6001
-                DDRB  = $6002
-                DDRA  = $6003
-                T1CL  = $6004
-                T1CH  = $6005
-                T1LL  = $6006
-                T1LH  = $6007
-                T2CL  = $6008
-                T2CH  = $6009
-                SR    = $600A
-                ACR   = $600B
-                PCR   = $600C
-                IFR   = $600D
-                IER   = $600E
-                ORAX  = $600F
-
                .import __RAM_START__
                .import __RAM_SIZE__
                .import __STACKSIZE__ 
                .import _main
+               .import _frame
                .import zerobss
                .import copydata
                .import initlib
@@ -40,47 +24,23 @@
                 .addr _init
                 .addr irq
 
-
-                ;.code
                 .segment "STARTUP"
 
 nmi:            rti
+
 irq:                    
                 pha
-                bit T1CL
                 clc
                 cld
                 clv
-
-                lda #1
-                bit PORTA
-                bne @off
-                lda #%11000000
-                sta PORTA
-                jmp @done
-
-@off:
-                lda #%00000000
-                sta PORTA
-
-                ;lda #0
-                ;cmp TOG
-                ;beq @on
-                ;dec TOG
-                ;lda #%00000000
-                ;sta PORTA  
-                ;jmp @done
-;@on:
-                ;inc TOG
-                ;lda #%11111111
-                ;sta PORTA  
-@done:
+                jsr irq_reset       ; Mark interrupt as read
                 pla
                 rti
 
 _init:
                 sei                
                 cld
+                clv
                 ldx #$ff
                 txs
 
@@ -93,29 +53,9 @@ _init:
                 jsr copydata
                 jsr initlib
 
-                lda #%11000000                  ; Set port A outputs / inputs
-                sta DDRA
-                clv
-                ldx #%11000000
-                stx PORTA      
-
-
                 jsr ssd1305_init
-
-                jsr setup_timer
-                cli
-
-                ;lda #<everett             ; put pointer to image in memory R0
-                ;sta R0
-                ;lda #>everett
-                ;sta R0 + 1
-
-                ;lda #$00
-                ;sta R0
-                ;lda #$3C
-                ;sta R0 + 1
-
-                ;jsr _display
+                jsr io_init
+                cli                 ; Turn interrupts on
 
                 jsr _main
 

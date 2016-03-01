@@ -1,5 +1,5 @@
 C_SOURCES = main.c
-ASM_SOURCES = crt0.s65 zeropage.s65 display.s65 util.s65 led.s65
+ASM_SOURCES = crt0.s65 zeropage.s65 display.s65 util.s65 io.s65
 
 # Compilation of C files
 %.o: %.c
