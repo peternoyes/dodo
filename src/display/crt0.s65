@@ -51,17 +51,29 @@ irq:
                 clc
                 cld
                 clv
-                lda #0
-                cmp TOG
-                beq @on
-                dec TOG
-                lda #%00000000
-                sta PORTA  
+
+                lda #1
+                bit PORTA
+                bne @off
+                lda #%11000000
+                sta PORTA
                 jmp @done
-@on:
-                inc TOG
-                lda #%11111111
-                sta PORTA  
+
+@off:
+                lda #%00000000
+                sta PORTA
+
+                ;lda #0
+                ;cmp TOG
+                ;beq @on
+                ;dec TOG
+                ;lda #%00000000
+                ;sta PORTA  
+                ;jmp @done
+;@on:
+                ;inc TOG
+                ;lda #%11111111
+                ;sta PORTA  
 @done:
                 pla
                 rti
@@ -81,10 +93,10 @@ _init:
                 jsr copydata
                 jsr initlib
 
-                lda #%11111111                  ; Set port A to all outputs
+                lda #%11000000                  ; Set port A outputs / inputs
                 sta DDRA
                 clv
-                ldx #%11111111
+                ldx #%11000000
                 stx PORTA      
 
 
