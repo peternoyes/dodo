@@ -14,3 +14,6 @@
 .globalzp R0
 .globalzp R1
 .globalzp irq_status
+.globalzp music_mem
+.globalzp music_index
+.globalzp music_dec

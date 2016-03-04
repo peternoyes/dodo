@@ -1,2 +1,4 @@
 .import io_init
 .import irq_reset
+.import serial_init
+.import serial_alive

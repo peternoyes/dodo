@@ -30,11 +30,22 @@ nmi:            rti
 
 irq:                    
                 pha
+                txa
+                pha
+                tya
+                pha
+
                 clc
                 cld
                 clv
                 jsr irq_reset       ; Mark interrupt as read
+                
                 pla
+                tay
+                pla
+                tax
+                pla
+
                 rti
 
 _init:
@@ -56,6 +67,9 @@ _init:
                 jsr ssd1305_init
                 jsr io_init
                 cli                 ; Turn interrupts on
+
+                jsr serial_init
+                jsr serial_alive
 
                 jsr _main
 
