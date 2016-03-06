@@ -3,12 +3,8 @@
 #include "../common/io.h"
 #include "../common/util.h"
 #include "../common/display.h"
+#include "../common/game.h"
 
-#define VIDEO_MEM ((unsigned char *) 0x3c00)
-
-#define _BV(bit) (1 << (bit))
-
-#define SWAP(a, b) { unsigned char t = a; a = b; b = t;}
 
 #define NORMAL 0
 #define ABDUCTING 1
@@ -16,16 +12,18 @@
 #define LEFT 3
 #define RIGHT  4
 
-static unsigned char const _tiles[8] = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+#define _D1 210
+#define _G1 158
+#define _D2 104
+#define _C 118
+#define _B 125
+#define _A 140
+#define _G2 78
+#define _P 1
 
-static unsigned char const _playfield[128] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-											   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-										       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-											   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-											   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-											   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-											   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-											   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static unsigned char const _deadbeef_tiles[8] = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+
+static unsigned char const _music[44] =  { _D1, 2, 0, 1, _D1, 2, 0, 1, _D1, 3, _G1, 18, _D2, 18, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _C, 3, _A, 18, 0, 0 };
 
 static unsigned char const _saucer[16] = { 0x20, 0x70, 0x50, 0x78, 0x58, 0x78, 0xde, 0xf3, 0xf3, 0xde, 0x78, 0x58, 0x78, 0x50, 0x70, 0x20  };
 static unsigned char const _cow[48] = { 0x00, 0x80, 0x70, 0xf8, 0x38, 0x18, 0xf8, 0xf8, 0x18, 0x18, 0x38, 0x70, 0xf0, 0x70, 0x20, 0xe6, 0xfe, 0xdc, 0xf4, 0x80, 0xf4, 0xdc, 0xfe, 0x06, 0x0c, 0x03, 0x00, 0xff, 0xfe, 0x0c, 0x1d, 0x0f, 0x1f, 0x07, 0x06, 0x06, 0x07, 0x06, 0xfc, 0xfc, 0x07, 0x07, 0x0d, 0x0f, 0x0d, 0x07, 0x07, 0x00 };
@@ -48,156 +46,6 @@ static unsigned char _cow_y = 48;
 
 static unsigned char _cowState = NORMAL;
 
-void setPixel(unsigned char x, unsigned char y, unsigned char c) {
-	if (c == 1) 
-    	VIDEO_MEM[x + (y/8)*128] |= _BV((y%8));  
-  	else
-    	VIDEO_MEM[x + (y/8)*128] &= ~_BV((y%8));
-}
-
-unsigned char getPixel(unsigned char x, unsigned char y) {
-	return (VIDEO_MEM[x + (y/8)*128] >> (y%8)) & 0x1;
-}
-
-void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c) {
-	unsigned char dx, dy;
-	signed char ystep;
-	int err;
-	unsigned char steep = abs((signed char)y1-(signed char)y0) > abs((signed char)x1-(signed char)x0);
-	
-	if (steep) {
-		SWAP(x0, y0);
-		SWAP(x1, y1);
-	}
-
-	if (x0 > x1) {
-		SWAP(x0, x1);
-		SWAP(y0, y1);
-	}
-
-	dx = x1-x0;
-	dy = (unsigned char)abs((signed char)y1-(signed char)y0);
-
-	err = dx/2;
-
-	if (y0 < y1) {
-		ystep = 1;
-	} else {
-		ystep = -1;
-	}
-
-	for (; x0<=x1; ++x0) {
-		if (steep) {
-			setPixel(y0, x0, c);
-		} else {
-			setPixel(x0, y0, c);
-		}
-
-		err -= dy;
-		if (err < 0) {
-			y0 += ystep;
-			err += dx;
-		}
-	}
-}
-
-void drawPlayfield() {
-	unsigned char i, p, l = 0;
-	unsigned char* vmem = VIDEO_MEM;
-	
-	for (i = 0; i < 128; ++i) {
-		p = _playfield[i];
-		l = p + 8;
-		for (; p < l; ++p) {
-			*vmem = _tiles[p];
-			vmem++;
-		}
-	}
-}
-
-void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h) {
-	unsigned char p1 = y/8;
-	unsigned char p2 = (y+h-1)/8;
-	unsigned char i1 = x/8;
-	unsigned char i2 = (x+w-1)/8;
-	unsigned char p, i, l, o, v = 0;
-	unsigned char* vmem = 0;
-
-	for (p = p1; p <= p2; ++p) {
-		o = (p * 16) + i1;
-		vmem = VIDEO_MEM + (o * 8);
-		for (i = i1; i <= i2; ++i) {
-			v = _playfield[o];
-			l = v + 8;
-			for (; v < l; ++v) {
-				*vmem = _tiles[v];
-				++vmem;
-			}
-			++o;
-		}
-	}
-
-}
-
-void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip) {
-	unsigned char p = y/8;
-	unsigned char yoff = y%8;
-	unsigned char yoff_inv = 8-yoff;
-	unsigned char i = 0;
-	unsigned char il = 0;
-	unsigned char yp = 0;
-	unsigned char last = 0;
-
-	unsigned char* vmem = VIDEO_MEM; // + _char_x + (p*128);
-	for (i = 0; i < p; ++i) {
-		vmem += 128;
-	}
-	vmem += x;
-	
-	i = 0;
-	for (yp = 0; yp < h; yp += 8) {
-		il += w;
-		last = 0;
-		if (flip == 1) {
-			for (i = 0; i < w; ++i) {
-				if (yoff > 0 && yp > 0) {
-					last = sprite[il - i - 1 - w] >> yoff_inv;
-				}
-
-				*vmem |= (sprite[il - i - 1] << yoff) + last;
-				vmem++;
-			}
-		} else {
-			for (; i < il; ++i) {
-				if (yoff > 0 && yp > 0) {
-					last = sprite[i - w] >> yoff_inv;
-				}
-
-				*vmem |= (sprite[i] << yoff) + last;
-				vmem++;
-			}
-		}
-
-		vmem += (128 - w);
-	}
-
-	// Go through last set of sprite data becasue it spills over into next page of VMEM
-	if (yoff > 0) {
-		if (flip == 1) {
-			for (i = 0; i < w; ++i) {
-				*vmem |= (sprite[il - i - 1] >> yoff_inv);
-				++vmem;
-			}
-		} else {
-			i -= w;
-			for (; i < il; ++i) {
-				*vmem |= (sprite[i] >> yoff_inv);
-				++vmem;
-			}
-		}
-	}
-}
-
 int main() {
 	unsigned char* saucer = (unsigned char*)_saucer;
 	unsigned char* cow[10] = { 
@@ -211,11 +59,14 @@ int main() {
 		(unsigned char*)_walk1,
 		(unsigned char*)_walk2,
 		(unsigned char*)_walk3  };
+	
 	unsigned char keys = 0;
 	unsigned char cowAnimation = 0;
 	unsigned char frameCount = 0;
 	unsigned char cowDir = 1;
 
+	setTiles((unsigned char*)_deadbeef_tiles);
+	load_music((unsigned char*)_music);
 
 	drawPlayfield();
 

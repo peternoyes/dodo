@@ -1,13 +1,15 @@
             .include "zeropage.inc65"
             .include "util.inc65"
 
-			.export _led_on
-			.export _led_off
+		.export _led_on
+		.export _led_off
+            .export _wait
+            .export _load_music
             .export io_init
             .export irq_reset
-            .export _wait
             .export serial_init
             .export serial_alive
+
 
             PORTB = $6000
             PORTA = $6001
@@ -40,19 +42,17 @@
             _G2 = 78
             _P = 1
 
-
-			.code
+		.code
 
 _led_on:
-			ldx #%11000000
+		ldx #%11000000
             stx PORTA  
-			rts
+		rts
 
 _led_off:
-			ldx #%00000000
-            stx PORTA  
-			rts
-
+		ldx #%00000000
+            stx PORTA  			
+            rts
 
 io_init:
             lda #%11000000        ; Set port A outputs / inputs
@@ -78,14 +78,17 @@ io_init:
             
             ; Music
             ; Init music
-            lda #<music             ; put pointer to music in music_mem
+            ;lda #<music             ; put pointer to music in music_mem
+            ;sta music_mem
+            ;lda #>music
+            ;sta music_mem + 1
+            
+            lda #0
             sta music_mem
-            lda #>music
             sta music_mem + 1
+            sta music_index
             lda #1
             sta music_dec
-            lda #0
-            sta music_index
 
             lda #15             ; Low octave
             sta SR
@@ -93,22 +96,31 @@ io_init:
             sta T2CL
             rts
 
+_load_music:
+            sta music_mem
+            stx music_mem + 1
+            rts
+
+
 process_music:
+            lda music_mem          ; If music not loaded, return
+            beq @done
+
             dec music_dec
-            bne @done           ; if counter not at zero return
+            bne @done              ; if counter not at zero return
 
 @process_freq:
             ldy music_index
-            lda (music_mem), y    ; process current index
+            lda (music_mem), y     ; process current index
             sta T2CL
             iny
             lda (music_mem), y
-            bne @process_dur    ; If Dur = 0, loop back to start
+            bne @process_dur       ; If Dur = 0, loop back to start
             lda #0
             sta music_index
             jmp @process_freq
 @process_dur:        
-            iny                 ; Increment index, for next time in function
+            iny                    ; Increment index, for next time in function
             sty music_index 
             sta music_dec
 @done:
@@ -155,4 +167,4 @@ _wait:
 
 
 text:               .byte "0xDEADBEEF", $0d, $0a, $00
-music:   .byte _D1, 2, 0, 1, _D1, 2, 0, 1, _D1, 3, _G1, 18, _D2, 18, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _C, 3, _A, 18, 0, 0
+;music:   .byte _D1, 2, 0, 1, _D1, 2, 0, 1, _D1, 3, _G1, 18, _D2, 18, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _C, 3, _A, 18, 0, 0
