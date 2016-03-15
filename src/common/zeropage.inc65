@@ -17,3 +17,6 @@
 .globalzp music_mem
 .globalzp music_index
 .globalzp music_dec
+.globalzp effect_mem
+.globalzp effect_index
+.globalzp effect_dec

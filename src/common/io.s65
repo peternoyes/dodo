@@ -5,6 +5,7 @@
 		.export _led_off
             .export _wait
             .export _load_music
+            .export _play_effect
             .export io_init
             .export irq_reset
             .export serial_init
@@ -87,8 +88,12 @@ io_init:
             sta music_mem
             sta music_mem + 1
             sta music_index
+            sta effect_mem
+            sta effect_mem + 1
+            sta effect_index
             lda #1
             sta music_dec
+            sta effect_dec
 
             lda #15             ; Low octave
             sta SR
@@ -101,18 +106,29 @@ _load_music:
             stx music_mem + 1
             rts
 
+_play_effect:
+            sta effect_mem
+            stx effect_mem + 1
+            lda #0
+            sta effect_index
+            lda #1
+            sta effect_dec
+            rts
 
-process_music:
+process_music:            
             lda music_mem          ; If music not loaded, return
-            beq @done
+            beq @done_music
 
             dec music_dec
-            bne @done              ; if counter not at zero return
+            bne @done_music        ; if counter not at zero return
 
 @process_freq:
             ldy music_index
+            ldx effect_mem         ; If effect is loaded, skip actually writing out fequency
+            bne @skip_freq
             lda (music_mem), y     ; process current index
             sta T2CL
+@skip_freq:
             iny
             lda (music_mem), y
             bne @process_dur       ; If Dur = 0, loop back to start
@@ -123,7 +139,27 @@ process_music:
             iny                    ; Increment index, for next time in function
             sty music_index 
             sta music_dec
-@done:
+@done_music:
+            lda effect_mem
+            beq @done_effect
+
+            dec effect_dec
+            bne @done_effect
+@process_freq_effect:
+            ldy effect_index
+            lda (effect_mem), y
+            sta T2CL
+            iny
+            lda (effect_mem), y
+            bne @process_dur_effect
+            lda #0
+            sta effect_index
+            jmp @process_freq_effect
+@process_dur_effect:
+            iny
+            sty effect_index
+            sta effect_dec
+@done_effect:
             rts
 
 

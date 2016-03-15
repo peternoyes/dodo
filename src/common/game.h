@@ -21,6 +21,7 @@ static unsigned char const _playfield[128] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 static unsigned char* _tiles = 0;
 
 
+void fullscreenImage(unsigned char* image);
 void setTiles(unsigned char* tiles);
 void setPixel(unsigned char x, unsigned char y, unsigned char c);
 unsigned char getPixel(unsigned char x, unsigned char y);

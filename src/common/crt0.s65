@@ -68,8 +68,8 @@ _init:
                 jsr io_init
                 cli                 ; Turn interrupts on
 
-                jsr serial_init
-                jsr serial_alive
+                ;jsr serial_init
+                ;jsr serial_alive
 
                 jsr _main
 

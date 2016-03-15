@@ -1,5 +1,12 @@
 #include "game.h"
 
+void fullscreenImage(unsigned char* image) {
+	unsigned int i = 0;
+	for (; i < 1024; ++i) {
+		VIDEO_MEM[i] = image[i];
+	}
+}
+
 void setTiles(unsigned char* tiles) {
 	_tiles = tiles;
 }
@@ -84,31 +91,34 @@ void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned cha
 		vmem = VIDEO_MEM + (o * 8);
 		for (i = i1; i <= i2; ++i) {
 			v = _playfield[o];
-			l = v + 8;
-			for (; v < l; ++v) {
-				*vmem = _tiles[v];
-				++vmem;
+			if (v == 0) {
+				for (; v < 8; ++v) {
+					*vmem = 0;
+					++vmem;
+				}
+			} else {
+				l = v + 8;
+				for (; v < l; ++v) {
+					*vmem = _tiles[v];
+					++vmem;
+				}
 			}
 			++o;
 		}
 	}
-
 }
 
 void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip) {
 	unsigned char p = y/8;
 	unsigned char yoff = y%8;
 	unsigned char yoff_inv = 8-yoff;
+	unsigned char vmem_offset = 128-w;
 	unsigned char i = 0;
 	unsigned char il = 0;
 	unsigned char yp = 0;
 	unsigned char last = 0;
 
-	unsigned char* vmem = VIDEO_MEM; // + _char_x + (p*128);
-	for (i = 0; i < p; ++i) {
-		vmem += 128;
-	}
-	vmem += x;
+	unsigned char* vmem = VIDEO_MEM + x + (p *128);
 	
 	i = 0;
 	for (yp = 0; yp < h; yp += 8) {
@@ -134,7 +144,7 @@ void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigne
 			}
 		}
 
-		vmem += (128 - w);
+		vmem += vmem_offset;
 	}
 
 	// Go through last set of sprite data becasue it spills over into next page of VMEM

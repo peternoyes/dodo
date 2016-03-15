@@ -21,3 +21,6 @@ irq_status:		  .res 1
 music_mem:		  .res 2
 music_index: 	  .res 1
 music_dec:		  .res 1
+effect_mem:		  .res 2
+effect_index:	  .res 1
+effect_dec:	      .res 1
