@@ -13,6 +13,7 @@
 .globalzp ptr4
 .globalzp R0
 .globalzp R1
+.globalzp R2
 .globalzp irq_status
 .globalzp music_mem
 .globalzp music_index
@@ -20,3 +21,7 @@
 .globalzp effect_mem
 .globalzp effect_index
 .globalzp effect_dec
+.globalzp tmp5
+.globalzp tmp6
+.globalzp tmp7
+.globalzp tmp8

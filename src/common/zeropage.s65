@@ -17,6 +17,7 @@ regbank:          .res 6
 tmpstack:         .res 1
 R0:				  .res 2
 R1: 			  .res 2
+R2:				  .res 2
 irq_status:		  .res 1
 music_mem:		  .res 2
 music_index: 	  .res 1
@@ -24,3 +25,7 @@ music_dec:		  .res 1
 effect_mem:		  .res 2
 effect_index:	  .res 1
 effect_dec:	      .res 1
+tmp5:			  .res 1
+tmp6:			  .res 1
+tmp7:			  .res 1
+tmp8:			  .res 1

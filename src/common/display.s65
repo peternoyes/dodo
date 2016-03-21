@@ -40,7 +40,12 @@
                   SSD1305_SETVCOMLEVEL = $DB
 
                   .export ssd1305_init
-                  .export _display                  
+                  .export _display      
+                  .export _draw_sprite
+                  .export _set_pixel
+
+                  .import popax 
+                  .import popa           
 
                   .macro dc cmd
                     lda #cmd
@@ -91,6 +96,220 @@ ssd1305_init:
                   dc SSD1305_DISPLAYON
                   rts
 
+
+;void setPixel(unsigned char x, unsigned char y, unsigned char c)
+ _set_pixel:
+                  sta tmp1          ; c
+                  jsr popa
+                  sta tmp2          ; y
+                  jsr popa
+                  sta tmp3          ; x
+
+                  lda tmp2          ; calculate %
+                  and #$07
+                  sta tmp4
+                  lda tmp2
+                  lsr
+                  lsr
+                  lsr
+                  sta tmp5          ; Page
+
+                  lda #$00          ; pointer to vmem
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  ; Calculate offset into vmem based on page
+                  lda tmp5          ; Load page into a
+                  jsr multiply_128  ; a/x = page * 128
+                  adc ptr1
+                  sta ptr1
+                  txa
+                  adc ptr1+1
+                  sta ptr1+1
+                  clc
+
+                  lda #<shift_table
+                  sta ptr2
+                  lda #>shift_table
+                  sta ptr2+1
+
+                  lda tmp1
+                  beq @clear
+
+                  ldy tmp4
+                  lda (ptr2), y
+                  ldy tmp3
+                  ora (ptr1), y
+                  sta (ptr1), y
+                  rts
+
+@clear:
+                  ldy tmp4
+                  lda (ptr2), y
+                  eor #$ff
+                  ldy tmp3
+                  and (ptr1), y
+                  sta (ptr1), y
+                  rts       
+
+                         
+
+; drawing to #3C00
+;void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
+_draw_sprite:                  
+                  sta tmp7          ; flip
+
+                  jsr popa  
+                  sta tmp1          ; h
+                  jsr popa
+                  sta tmp2          ; w
+                  jsr popa
+                  sta tmp3          ; y
+                  jsr popa
+                  sta tmp4          ; x
+                  jsr popax
+                  sta ptr2          ; sprite
+                  stx ptr2+1
+
+
+                  lda tmp3
+                  and #$07          ; calculate %
+                  sta tmp5
+                  lda tmp3
+                  lsr               ; divide by 8
+                  lsr
+                  lsr
+                  sta tmp6          ; Page
+
+                  lda tmp5
+                  beq @fast   
+                  jmp @complex                
+
+                  ; Fast case
+@fast:
+                  lda #$00          ; pointer to vmem
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  ; Calculate offset into vmem based on page
+                  lda tmp6          ; Load page into a
+                  jsr multiply_128  ; a/x = page * 128
+                  adc ptr1
+                  sta ptr1
+                  txa
+                  adc ptr1+1
+                  sta ptr1+1
+                  clc
+
+                  lda tmp4          ; add x to ptr1
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+@next_stripe:
+                  ldx #0
+                  lda tmp7
+                  bne @transfer_flip
+
+@transfer_next:
+                  lda (ptr1), y
+                  ora (ptr2), y
+                  sta (ptr1), y
+                  dey
+                  bne @transfer_next
+                  lda (ptr1), y      ; Last byte
+                  ora (ptr2), y
+                  sta (ptr1), y
+                  jmp @process_done
+@transfer_flip:
+                  tya
+                  pha
+                  txa                  
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp8
+                  pla
+                  tay
+                  lda (ptr1), y
+                  ora tmp8
+                  sta (ptr1), y  
+                  dey                
+                  bne @transfer_flip
+                  txa               ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp8
+                  ldy #0
+                  lda (ptr1), y
+                  ora tmp8
+                  sta (ptr1), y
+
+@process_done:
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done         ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  clc
+                  lda tmp2
+                  adc ptr2
+                  sta ptr2
+                  lda #0
+                  adc ptr2+1
+                  sta ptr2+1
+
+                  ldy tmp2
+                  dey
+
+                  jmp @next_stripe
+
+                  jmp @done
+@complex:                   
+
+
+@done:
+                  rts
+
+; multiply 8-bit number in a and store results in a/x as 16-bit
+multiply_128:
+                  ldy tmp1    ; cache tmp1 in y
+                  ldx #0      ; store 0 in tmp1, a already populated
+                  stx tmp1
+                  asl a       ; 2
+                  rol tmp1
+                  asl a       ; 4
+                  rol tmp1
+                  asl a       ; 8
+                  rol tmp1
+                  asl a       ; 16
+                  rol tmp1
+                  asl a       ; 32
+                  rol tmp1
+                  asl a       ; 64
+                  rol tmp1
+                  asl a       ; 128
+                  rol tmp1
+                  ldx tmp1            
+                  sty tmp1
+                  clc
+                  rts
+
 ; Drawn from $3C00
 _display:              
                   clc
@@ -114,10 +333,8 @@ _display:
 @byte_loop1:      lda (R0), y
                   sta SSD1305_DATA
                   iny
-                  sty R1
-                  lda #128
-                  bit R1
-                  beq @byte_loop1
+                  bpl @byte_loop1
+                  
                   ; odd pages (1, 3, 5, 7)
                   inx
                   lda #SSD1305_SETPAGESTART
@@ -138,3 +355,5 @@ _display:
                   bit R1
                   beq @next_page_group
                   rts
+
+shift_table:               .byte 1, 2, 4, 8, 16, 32, 64, 128

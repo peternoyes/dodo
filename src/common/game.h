@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "display.h"
 
 #define VIDEO_MEM ((unsigned char *) 0x3c00)
 #define _BV(bit) (1 << (bit))
@@ -28,6 +29,7 @@ unsigned char getPixel(unsigned char x, unsigned char y);
 void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c);
 void drawPlayfield(void);
 void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h);
+void orSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip);
 void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip);
 
 #endif											   
