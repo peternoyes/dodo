@@ -182,12 +182,6 @@ _draw_sprite:
                   lsr
                   sta tmp6          ; Page
 
-                  lda tmp5
-                  beq @fast   
-                  jmp @complex                
-
-                  ; Fast case
-@fast:
                   lda #$00          ; pointer to vmem
                   sta ptr1
                   lda #$3C
@@ -210,24 +204,30 @@ _draw_sprite:
                   adc ptr1+1
                   sta ptr1+1
 
+                  lda tmp5
+                  beq @fast   
+                  jmp @complex                
+
+                  ; Fast case
+@fast:            
                   ldy tmp2          ; Load width into y, will decrement to 0     
                   dey               ; start at w - 1
-@next_stripe:
+@fast_stripe:
                   ldx #0
                   lda tmp7
-                  bne @transfer_flip
+                  bne @fast_byte_flip
 
-@transfer_next:
+@fast_byte:
                   lda (ptr1), y
                   ora (ptr2), y
                   sta (ptr1), y
                   dey
-                  bne @transfer_next
+                  bne @fast_byte
                   lda (ptr1), y      ; Last byte
                   ora (ptr2), y
                   sta (ptr1), y
-                  jmp @process_done
-@transfer_flip:
+                  jmp @fast_next_stripe
+@fast_byte_flip:
                   tya
                   pha
                   txa                  
@@ -241,7 +241,7 @@ _draw_sprite:
                   ora tmp8
                   sta (ptr1), y  
                   dey                
-                  bne @transfer_flip
+                  bne @fast_byte_flip
                   txa               ; Last byte
                   tay
                   lda (ptr2), y
@@ -251,7 +251,153 @@ _draw_sprite:
                   ora tmp8
                   sta (ptr1), y
 
-@process_done:
+@fast_next_stripe:
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done_fast    ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  clc
+                  lda tmp2
+                  adc ptr2
+                  sta ptr2
+                  lda #0
+                  adc ptr2+1
+                  sta ptr2+1
+
+                  ldy tmp2
+                  dey
+
+                  jmp @fast_stripe
+
+@done_fast:       jmp @done
+
+@complex:          
+                  sec
+                  lda #8
+                  sbc tmp5
+                  sta tmp8          ; 8 - (y%8)
+
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+
+
+@complex_stripe:
+
+                  clc               ; Store next row in ptr3
+                  lda #128
+                  adc ptr1
+                  sta ptr3
+                  lda #0
+                  adc ptr1+1
+                  sta ptr3+1
+
+                  ldx #0
+                  lda tmp7
+                  bne @complex_byte_flip  ; TODO: Jump to complex flip
+
+@complex_byte:                  
+                  lda (ptr2), y     ; shift << into current row
+                  ldx tmp5
+@next_asl:        asl
+                  dex
+                  bne @next_asl
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y     ; shift >> into next row
+                  ldx tmp8
+@next_lsr:        lsr
+                  dex
+                  bne @next_lsr
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  dey
+                  bne @complex_byte
+
+                  lda (ptr2), y     ; Last byte
+                  ldx tmp5
+@next_asl_last:   asl
+                  dex
+                  bne @next_asl_last
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y
+                  ldx tmp8
+@next_lsr_last:   lsr
+                  dex
+                  bne @next_lsr_last
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+
+@complex_byte_flip:
+                  tya
+                  pha
+                  txa
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp3         ; Reuse tmp3, y not needed anymore
+                  pla
+                  tay
+
+                  txa
+                  pha
+                  lda tmp3
+                  ldx tmp5
+@next_asl_flip:   asl
+                  dex
+                  bne @next_asl_flip
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip:   lsr
+                  dex
+                  bne @next_lsr_flip
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  pla
+                  tax
+                  dey
+                  bne @complex_byte_flip
+                  
+                  txa            ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp3
+
+                  ldy #0
+                  ldx tmp5
+@next_asl_flip_last:
+                  asl
+                  dex
+                  bne @next_asl_flip_last
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip_last:
+                  lsr
+                  dex
+                  bne @next_lsr_flip_last
+                  ora (ptr3), y
+                  sta (ptr3), y
+
+@complex_next_stripe:
                   lda tmp1  
                   sec                
                   sbc #8
@@ -277,12 +423,7 @@ _draw_sprite:
                   ldy tmp2
                   dey
 
-                  jmp @next_stripe
-
-                  jmp @done
-@complex:                   
-
-
+                  jmp @complex_stripe       
 @done:
                   rts
 

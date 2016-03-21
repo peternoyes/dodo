@@ -119,7 +119,7 @@ int main() {
 		}
 		
 		if (_fart_active) {
-			orSprite(fart_sprite, _fart_x, _fart_y, 8, 8, 0);
+			draw_sprite(fart_sprite, _fart_x, _fart_y, 8, 8, 0);
 		}
 		
 
