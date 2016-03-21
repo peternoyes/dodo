@@ -11,12 +11,13 @@ void setTiles(unsigned char* tiles) {
 	_tiles = tiles;
 }
 
+/*
 void setPixel(unsigned char x, unsigned char y, unsigned char c) {
 	if (c == 1) 
     	VIDEO_MEM[x + (y/8)*128] |= _BV((y%8));  
   	else
     	VIDEO_MEM[x + (y/8)*128] &= ~_BV((y%8));
-}
+}*/
 
 unsigned char getPixel(unsigned char x, unsigned char y) {
 	return (VIDEO_MEM[x + (y/8)*128] >> (y%8)) & 0x1;
@@ -78,36 +79,8 @@ void drawPlayfield(void) {
 	}
 }
 
+/*
 void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h) {
-	/*
-	unsigned char p1 = y/8;
-	unsigned char p2 = (y+h-1)/8;
-	unsigned char i1 = x/8;
-	unsigned char i2 = (x+w-1)/8;
-	unsigned char p, i, l, o, v = 0;
-	unsigned char* vmem = 0;
-
-	for (p = p1; p <= p2; ++p) {
-		o = (p * 16) + i1;
-		vmem = VIDEO_MEM + (o * 8);
-		for (i = i1; i <= i2; ++i) {
-			v = _playfield[o];
-			if (v == 0) {
-				for (; v < 8; ++v) {
-					*vmem = 0;
-					++vmem;
-				}
-			} else {
-				l = v + 8;
-				for (; v < l; ++v) {
-					*vmem = _tiles[v];
-					++vmem;
-				}
-			}
-			++o;
-		}
-	}*/
-
 	unsigned char p = y/8;
 	unsigned char yoff = y%8;
 	unsigned char i = 0;
@@ -147,8 +120,9 @@ void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned cha
 			}
 			break;
 	}
-}
+}*/
 
+/*
 void orSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip) {
 	unsigned char i = 0;
 	unsigned char p = y/8;
@@ -299,60 +273,4 @@ void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigne
 			}
 		}
 	}
-
-	/*
-	unsigned char p = y/8;
-	unsigned char yoff = y%8;
-	unsigned char yoff_inv = 8-yoff;
-	unsigned char vmem_offset = 128-w;
-	unsigned char i = 0;
-	unsigned char il = 0;
-	unsigned char yp = 0;
-	unsigned char last = 0;
-
-	unsigned char* vmem = VIDEO_MEM + x + (p *128);
-
-	i = 0;
-	for (yp = 0; yp < h; yp += 8) {
-		il += w;
-		last = 0;
-		if (flip == 1) {
-			for (i = 0; i < w; ++i) {
-				if (yoff > 0 && yp > 0) {
-					last = sprite[il - i - 1 - w] >> yoff_inv;
-				}
-
-				*vmem |= (sprite[il - i - 1] << yoff) + last;
-				vmem++;
-			}
-		} else {
-			for (; i < il; ++i) {
-				if (yoff > 0 && yp > 0) {
-					last = sprite[i - w] >> yoff_inv;
-				}
-
-				*vmem |= (sprite[i] << yoff) + last;
-				vmem++;
-			}
-		}
-
-		vmem += vmem_offset;
-	}
-
-	// Go through last set of sprite data becasue it spills over into next page of VMEM
-	if (yoff > 0) {
-		if (flip == 1) {
-			for (i = 0; i < w; ++i) {
-				*vmem |= (sprite[il - i - 1] >> yoff_inv);
-				++vmem;
-			}
-		} else {
-			i -= w;
-			for (; i < il; ++i) {
-				*vmem |= (sprite[i] >> yoff_inv);
-				++vmem;
-			}
-		}
-	}
-	*/
-}
+}*/

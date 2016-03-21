@@ -43,6 +43,7 @@
                   .export _display      
                   .export _draw_sprite
                   .export _set_pixel
+                  .export _clear_sprite
 
                   .import popax 
                   .import popa           
@@ -153,7 +154,84 @@ ssd1305_init:
                   sta (ptr1), y
                   rts       
 
-                         
+; void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
+_clear_sprite:
+                  sta tmp1          ; h
+                  jsr popa
+                  sta tmp2          ; w
+                  jsr popa
+                  sta tmp3          ; y
+                  jsr popa
+                  sta tmp4          ; x
+
+                  lda tmp3
+                  lsr
+                  lsr
+                  lsr
+                  sta tmp5          ; Page
+
+                  lda tmp3
+                  and #$07
+                  beq @load
+
+                  clc
+                  lda tmp1
+                  adc #8
+                  sta tmp1
+
+@load:
+                  lda #$00          ; pointer to vmem
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  ; Calculate offset into vmem based on page
+                  lda tmp5
+                  jsr multiply_128  ; a/x = page * 128
+                  adc ptr1
+                  sta ptr1
+                  txa
+                  adc ptr1+1
+                  sta ptr1+1
+                  clc
+
+                  lda tmp4          ; add x to ptr1
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+
+@start:           lda #0
+@next:            sta (ptr1), y
+                  dey
+                  bne @next
+                  sta (ptr1), y
+
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done    ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  ldy tmp2
+                  dey
+
+                  jmp @start
+@done:
+                  rts                         
+
 
 ; drawing to #3C00
 ;void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)

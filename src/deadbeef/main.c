@@ -101,14 +101,14 @@ int main() {
 	load_music((unsigned char*)_music);
 
 	drawPlayfield();
-	drawSprite(numbers + (_score * 8), 120, 0, 8, 8, 0);
-	drawSprite(numbers + (_lives * 8), 0, 0, 8, 8, 0);
+	draw_sprite(numbers + (_score * 8), 120, 0, 8, 8, 0);
+	draw_sprite(numbers + (_lives * 8), 0, 0, 8, 8, 0);
 
 	for (;;) {
 		++frameCount;
 
 		if (_lives == 0) {
-			drawSprite(game_over, 44, 28, 40, 8, 0);
+			draw_sprite(game_over, 44, 28, 40, 8, 0);
 			display();
 			break;
 		}
@@ -130,13 +130,13 @@ int main() {
 
 		display();
 
-		clearSprite(_saucer_x, _saucer_y, 16, 8);
+		clear_sprite(_saucer_x, _saucer_y, 16, 8);
 		if (_cowState != REGENERATING) {
-			clearSprite(_cow_x, _cow_y, 24, 16);
+			clear_sprite(_cow_x, _cow_y, 24, 16);
 		}
 		
 		if (_fart_active) {
-			clearSprite(_fart_x, _fart_y, 8, 8);
+			clear_sprite(_fart_x, _fart_y, 8, 8);
 
 			_fart_y -= 2;
 			if (_fart_y > 127) {
@@ -146,7 +146,8 @@ int main() {
 					if (_fart_x > (_saucer_x - 8) && _fart_x < (_saucer_x + 16)) {
 						_fart_active = 0;
 						--_lives;
-						drawSprite(numbers + (_lives * 8), 0, 0, 8, 8, 0);						
+						clear_sprite(0, 0, 8, 8);
+						draw_sprite(numbers + (_lives * 8), 0, 0, 8, 8, 0);						
 					}			
 				}
 
@@ -189,7 +190,8 @@ int main() {
 			if (_cow_y < 8) { // Check if cow has been fully abducted
 				_cow_y = 8;
 				++_score;
-				drawSprite(numbers + (_score * 8), 120, 0, 8, 8, 0);
+				clear_sprite(120, 0, 8, 8);
+				draw_sprite(numbers + (_score * 8), 120, 0, 8, 8, 0);
 				_cowState = REGENERATING;			
 			}
 		} else if (_cowState == FALLING) {
