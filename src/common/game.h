@@ -24,12 +24,12 @@ static unsigned char* _tiles = 0;
 
 void fullscreenImage(unsigned char* image);
 void setTiles(unsigned char* tiles);
-void setPixel(unsigned char x, unsigned char y, unsigned char c);
+//void setPixel(unsigned char x, unsigned char y, unsigned char c);
 unsigned char getPixel(unsigned char x, unsigned char y);
 void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c);
 void drawPlayfield(void);
-void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h);
-void orSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip);
-void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip);
+//void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h);
+//void orSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip);
+//void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip);
 
 #endif											   

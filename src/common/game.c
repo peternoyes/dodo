@@ -26,7 +26,7 @@ unsigned char getPixel(unsigned char x, unsigned char y) {
 void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c) {
 	unsigned char dx, dy;
 	signed char ystep;
-	int err;
+	signed char err;
 	unsigned char steep = abs((signed char)y1-(signed char)y0) > abs((signed char)x1-(signed char)x0);
 	
 	if (steep) {
@@ -50,17 +50,25 @@ void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned cha
 		ystep = -1;
 	}
 
-	for (; x0<=x1; ++x0) {
-		if (steep) {
+	if (steep) {
+		for (; x0<=x1; ++x0) {
 			set_pixel(y0, x0, c);
-		} else {
-			set_pixel(x0, y0, c);
-		}
 
-		err -= dy;
-		if (err < 0) {
-			y0 += ystep;
-			err += dx;
+			err -= dy;
+			if (err < 0) {
+				y0 += ystep;
+				err += dx;
+			}
+		}
+	} else {
+		for (; x0<=x1; ++x0) {
+			set_pixel(x0, y0, c);
+
+			err -= dy;
+			if (err < 0) {
+				y0 += ystep;
+				err += dx;
+			}
 		}
 	}
 }
