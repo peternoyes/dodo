@@ -1,5 +1,5 @@
 C_SOURCES = main.c ../common/game.c
-ASM_SOURCES = ../common/crt0.s65 ../common/zeropage.s65 ../common/display.s65 ../common/util.s65 ../common/io.s65
+ASM_SOURCES = ../common/crt0.s65 ../common/zeropage.s65 ../common/display.s65 ../common/util.s65 ../common/io.s65 ../common/api.s65
 
 # Compilation of C files
 %.o: %.c

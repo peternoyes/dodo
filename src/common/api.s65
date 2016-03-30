@@ -1,0 +1,72 @@
+					.include "display.inc65"
+					.include "zeropage.inc65"
+
+					.setcpu "6502"
+
+					.export tramp_popa
+					.export tramp_popax
+
+					.segment "API"
+                	.addr trampoline
+
+					.code
+
+trampoline:
+					pha
+					txa
+					pha
+
+					ldx tramp
+					lda funcs_low, x
+					sta R0
+					lda funcs_high, x
+					sta R0+1
+
+					pla
+					tax
+					pla
+
+					jmp (R0)
+
+tramp_popa:
+					lda	tramp_sp
+					sec
+					sbc	#tramp_sp
+					tax
+
+			        lda (tramp_sp, x)
+
+			        inc tramp_sp, x         
+			        beq @L1    
+			        rts                  
+
+@L1:    			inc tramp_sp+1, x
+        			rts
+
+
+tramp_popax:
+					lda	tramp_sp
+					sec 	
+					sbc #tramp_sp
+					tax
+					lda	(tramp_sp, x)
+					pha
+					
+					inc tramp_sp, x
+					bne	@L1
+					inc tramp_sp+1, x
+@L1:
+					lda	(tramp_sp, x)
+
+					inc tramp_sp, x
+					bne	@L2
+					inc tramp_sp+1, x
+@L2:
+					tax
+					pla
+					
+					rts
+
+
+funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel
+funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel

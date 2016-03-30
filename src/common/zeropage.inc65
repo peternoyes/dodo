@@ -1,3 +1,5 @@
+.globalzp tramp
+.globalzp tramp_sp
 .globalzp sp
 .globalzp sreg
 .globalzp regsave

@@ -23,56 +23,6 @@ unsigned char getPixel(unsigned char x, unsigned char y) {
 	return (VIDEO_MEM[x + (y/8)*128] >> (y%8)) & 0x1;
 }
 
-void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c) {
-	unsigned char dx, dy;
-	signed char ystep;
-	signed char err;
-	unsigned char steep = abs((signed char)y1-(signed char)y0) > abs((signed char)x1-(signed char)x0);
-	
-	if (steep) {
-		SWAP(x0, y0);
-		SWAP(x1, y1);
-	}
-
-	if (x0 > x1) {
-		SWAP(x0, x1);
-		SWAP(y0, y1);
-	}
-
-	dx = x1-x0;
-	dy = (unsigned char)abs((signed char)y1-(signed char)y0);
-
-	err = dx/2;
-
-	if (y0 < y1) {
-		ystep = 1;
-	} else {
-		ystep = -1;
-	}
-
-	if (steep) {
-		for (; x0<=x1; ++x0) {
-			set_pixel(y0, x0, c);
-
-			err -= dy;
-			if (err < 0) {
-				y0 += ystep;
-				err += dx;
-			}
-		}
-	} else {
-		for (; x0<=x1; ++x0) {
-			set_pixel(x0, y0, c);
-
-			err -= dy;
-			if (err < 0) {
-				y0 += ystep;
-				err += dx;
-			}
-		}
-	}
-}
-
 void drawPlayfield(void) {
 	unsigned char i, p, l = 0;
 	unsigned char* vmem = VIDEO_MEM;
@@ -282,3 +232,43 @@ void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigne
 		}
 	}
 }*/
+
+void getSpiDevice(unsigned char* manufacturer, unsigned char* density, unsigned char* product) {
+	spi_enable();
+	spi_write(SPI_RDID);
+	*manufacturer = spi_write(0);
+	spi_write(0);
+	*density = spi_write(0);
+	*product = spi_write(0);
+	spi_disable();
+}
+
+unsigned char spiRead(unsigned int a) {
+	unsigned char v;
+	spi_enable();
+	spi_write(SPI_READ);
+	spi_write((unsigned char)(a >> 8));
+	spi_write((unsigned char)(a & 0xFF));
+	v = spi_write(0);
+	spi_disable();
+	return v;
+}
+
+void spiWriteEnable(unsigned char e) {
+	spi_enable();
+	if (e == 1) {
+		spi_write(SPI_WREN);
+	} else {
+		spi_write(SPI_WRDI);
+	}
+	spi_disable();
+}
+
+void spiWrite(unsigned int a, unsigned char v) {
+	spi_enable();
+	spi_write(SPI_WRITE);
+	spi_write((unsigned char)(a >> 8));
+	spi_write((unsigned char)(a & 0xFF));
+	spi_write(v);
+	spi_disable();
+}

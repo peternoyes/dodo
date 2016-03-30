@@ -3,6 +3,7 @@
 #include "../common/io.h"
 #include "../common/util.h"
 #include "../common/display.h"
+#include "../common/api.h"
 #include "../common/game.h"
 
 
@@ -91,35 +92,64 @@ int main() {
 	unsigned char fart = 0;
 	unsigned char i = 0;
 
-	fullscreenImage((unsigned char*)_title);
-	display();
-	for (i = 0; i < 8; ++i) {
-		delay_ms(255);
-	}
+	unsigned char manufID;
+	unsigned char den;
+	unsigned char prodID;
+
+	api_init();
+
+	getSpiDevice(&manufID, &den, &prodID);
+
+	if (manufID == 0x04 && den == 0x03 /*&& prodID == 0x0302*/) {
+		fullscreenImage((unsigned char*)_title);
+		DISPLAY();
+
+		frameCount = spiRead((unsigned int)0x0);
+		if (frameCount > 0x9) {
+			frameCount = 0;
+		}
+		DRAW_SPRITE(numbers + (frameCount * 8), 112, 48, 8, 8, 0);
+
+		++frameCount;
+		if (frameCount > 0x9) {
+			frameCount = 0;
+		}
+
+		spiWriteEnable(0x1);
+		spiWrite((unsigned int)0x0, frameCount);
+		spiWriteEnable(0x0);
+
+		frameCount = 0;
+
+		DISPLAY();
+		for (i = 0; i < 8; ++i) {
+			delay_ms(255);
+		}
+	} 
 
 	setTiles((unsigned char*)_deadbeef_tiles);
 	load_music((unsigned char*)_music);
 
 	drawPlayfield();
-	draw_sprite(numbers + (_score * 8), 120, 0, 8, 8, 0);
-	draw_sprite(numbers + (_lives * 8), 0, 0, 8, 8, 0);
+	DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0);
+	DRAW_SPRITE(numbers + (_lives * 8), 0, 0, 8, 8, 0);
 
 	for (;;) {
 		++frameCount;
 
 		if (_lives == 0) {
-			draw_sprite(game_over, 44, 28, 40, 8, 0);
-			display();
+			DRAW_SPRITE(game_over, 44, 28, 40, 8, 0);
+			DISPLAY();
 			break;
 		}
 
-		draw_sprite(saucer, _saucer_x, _saucer_y, 16, 8, 0);
+		DRAW_SPRITE(saucer, _saucer_x, _saucer_y, 16, 8, 0);
 		if (_cowState != REGENERATING) {
-			draw_sprite(cow[cowAnimation], _cow_x, _cow_y, 24, 16, cowDir);
+			DRAW_SPRITE(cow[cowAnimation], _cow_x, _cow_y, 24, 16, cowDir);
 		}
 		
 		if (_fart_active) {
-			draw_sprite(fart_sprite, _fart_x, _fart_y, 8, 8, 0);
+			DRAW_SPRITE(fart_sprite, _fart_x, _fart_y, 8, 8, 0);
 		}
 		
 
@@ -128,15 +158,15 @@ int main() {
 			drawLine(_saucer_x + 9, _saucer_y + 8, _saucer_x + 6 + 16, 63, 1);
 		}
 
-		display();
+		DISPLAY();
 
-		clear_sprite(_saucer_x, _saucer_y, 16, 8);
+		CLEAR_SPRITE(_saucer_x, _saucer_y, 16, 8);
 		if (_cowState != REGENERATING) {
-			clear_sprite(_cow_x, _cow_y, 24, 16);
+			CLEAR_SPRITE(_cow_x, _cow_y, 24, 16);
 		}
 		
 		if (_fart_active) {
-			clear_sprite(_fart_x, _fart_y, 8, 8);
+			CLEAR_SPRITE(_fart_x, _fart_y, 8, 8);
 
 			_fart_y -= 2;
 			if (_fart_y > 127) {
@@ -146,8 +176,8 @@ int main() {
 					if (_fart_x > (_saucer_x - 8) && _fart_x < (_saucer_x + 16)) {
 						_fart_active = 0;
 						--_lives;
-						clear_sprite(0, 0, 8, 8);
-						draw_sprite(numbers + (_lives * 8), 0, 0, 8, 8, 0);						
+						CLEAR_SPRITE(0, 0, 8, 8);
+						DRAW_SPRITE(numbers + (_lives * 8), 0, 0, 8, 8, 0);						
 					}			
 				}
 
@@ -190,8 +220,8 @@ int main() {
 			if (_cow_y < 8) { // Check if cow has been fully abducted
 				_cow_y = 8;
 				++_score;
-				clear_sprite(120, 0, 8, 8);
-				draw_sprite(numbers + (_score * 8), 120, 0, 8, 8, 0);
+				CLEAR_SPRITE(120, 0, 8, 8);
+				DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0);
 				_cowState = REGENERATING;			
 			}
 		} else if (_cowState == FALLING) {

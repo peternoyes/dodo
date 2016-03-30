@@ -10,6 +10,9 @@
             .export irq_reset
             .export serial_init
             .export serial_alive
+            .export _spi_enable
+            .export _spi_disable
+            .export _spi_write
 
 
             PORTB = $6000
@@ -60,6 +63,11 @@ io_init:
             sta DDRA
             ldx #%11000000
             stx PORTA      
+
+            lda #%01111111        ; Set port B outputs / inputs
+            sta DDRB
+            ldx #%01111110
+            stx PORTB     
 
             lda #0                ; Setup interrupts     
             sta irq_status
@@ -199,6 +207,46 @@ _wait:
             sta irq_status
 @loop:      lda irq_status
             beq @loop
+            rts
+
+; void spi_enable()
+_spi_enable:
+            lda #%00111100
+            sta PORTB
+            rts
+
+; void spi_disable()
+_spi_disable:
+            lda #%00111110
+            sta PORTB
+            rts
+
+; unsigned char spi_write(unsigned char v)
+_spi_write:
+            sta tmp1
+            ldy #0
+            sty tmp2
+            ldx #8
+@begin:
+            lda #%00111100
+            asl tmp1
+            bcc @skip_write
+            ora #%01000000
+@skip_write: 
+            sta PORTB         ; Write bit to mosi (clock is still low)
+            nop
+            inc PORTB         ; Clock High
+            clc
+            bit PORTB         ; Read miso
+            bpl @skip_read
+            sec
+@skip_read:
+            rol tmp2
+            ;dec PORTB         ; Clock low
+            dex
+            bne @begin
+            lda tmp2
+            ldx #0
             rts
 
 

@@ -6,5 +6,8 @@ extern void __fastcall__ led_off(void);
 extern void __fastcall__ wait(void);
 extern void __fastcall__ load_music(unsigned char* music);
 extern void __fastcall__ play_effect(unsigned char* effect);
+extern void __fastcall__ spi_enable(void);
+extern void __fastcall__ spi_disable(void);
+extern unsigned char __fastcall__ spi_write(unsigned char v);
 
 #endif

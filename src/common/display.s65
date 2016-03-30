@@ -1,6 +1,7 @@
                   .setcpu "6502"
 
                   .include "zeropage.inc65"
+                  .include "api.inc65"
 
                   SSD1305_COMMAND = $4800
                   SSD1305_DATA = $4801
@@ -40,13 +41,10 @@
                   SSD1305_SETVCOMLEVEL = $DB
 
                   .export ssd1305_init
-                  .export _display      
-                  .export _draw_sprite
-                  .export _set_pixel
-                  .export _clear_sprite
-
-                  .import popax 
-                  .import popa           
+                  .export display      
+                  .export draw_sprite
+                  .export set_pixel
+                  .export clear_sprite          
 
                   .macro dc cmd
                     lda #cmd
@@ -99,11 +97,11 @@ ssd1305_init:
 
 
 ;void setPixel(unsigned char x, unsigned char y, unsigned char c)
- _set_pixel:
+ set_pixel:
                   sta tmp1          ; c
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp2          ; y
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp3          ; x
 
                   lda tmp2          ; calculate %
@@ -155,13 +153,13 @@ ssd1305_init:
                   rts       
 
 ; void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
-_clear_sprite:
+clear_sprite:
                   sta tmp1          ; h
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp2          ; w
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp3          ; y
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp4          ; x
 
                   lda tmp3
@@ -234,19 +232,18 @@ _clear_sprite:
 
 
 ; drawing to #3C00
-;void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
-_draw_sprite:                  
+; void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
+draw_sprite:                  
                   sta tmp7          ; flip
-
-                  jsr popa  
+                  jsr tramp_popa  
                   sta tmp1          ; h
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp2          ; w
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp3          ; y
-                  jsr popa
+                  jsr tramp_popa
                   sta tmp4          ; x
-                  jsr popax
+                  jsr tramp_popax
                   sta ptr2          ; sprite
                   stx ptr2+1
 
@@ -530,7 +527,7 @@ multiply_128:
                   rts
 
 ; Drawn from $3C00
-_display:              
+display:              
                   clc
                   clv   
                   lda #$00
