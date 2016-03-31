@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "display.h"
+//#include "display.h"
 #include "io.h"
 
 #define VIDEO_MEM ((unsigned char *) 0x3c00)

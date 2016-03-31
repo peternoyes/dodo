@@ -68,5 +68,5 @@ tramp_popax:
 					rts
 
 
-funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel
-funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel
+funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line
+funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line

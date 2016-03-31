@@ -44,7 +44,8 @@
                   .export display      
                   .export draw_sprite
                   .export set_pixel
-                  .export clear_sprite          
+                  .export clear_sprite  
+                  .export draw_line        
 
                   .macro dc cmd
                     lda #cmd
@@ -103,6 +104,7 @@ ssd1305_init:
                   sta tmp2          ; y
                   jsr tramp_popa
                   sta tmp3          ; x
+set_pixel_noargs:                   ; alternate entry point
 
                   lda tmp2          ; calculate %
                   and #$07
@@ -525,6 +527,189 @@ multiply_128:
                   sty tmp1
                   clc
                   rts
+
+; void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c) {
+draw_line:
+                  ldy #0
+
+                  sta tmp5          ; c
+                  jsr tramp_popa
+                  sta tmp4          ; y1
+                  jsr tramp_popa
+                  sta tmp3          ; x1
+                  jsr tramp_popa
+                  sta tmp2          ; y0
+                  jsr tramp_popa
+                  sta tmp1          ; x0
+
+                  ; unsigned char steep = abs((signed char)y1-(signed char)y0) > abs((signed char)x1-(signed char)x0);
+                  lda tmp4
+                  sec
+                  sbc tmp2
+                  jsr abs
+                  sta tmp6
+
+                  lda tmp3
+                  sec
+                  sbc tmp1
+                  jsr abs
+                  sta tmp7
+
+                  cmp tmp6
+                  bcs @noswap
+
+                  ldy #1            ; store steep in y
+
+                  ; if steep swap  x0, y0 and x1, y1
+                  lda tmp1
+                  ldx tmp2
+                  sta tmp2
+                  stx tmp1
+
+                  lda tmp3
+                  ldx tmp4
+                  sta tmp4
+                  stx tmp3
+@noswap:
+                  ; if x0 > x1 swap x0, x1 and y0, y1
+                  lda tmp3
+                  cmp tmp1
+                  bcs @right
+
+                  lda tmp1
+                  ldx tmp3
+                  sta tmp3
+                  stx tmp1
+
+                  lda tmp2
+                  ldx tmp4
+                  sta tmp4
+                  stx tmp2
+
+@right:
+
+                  ; dx = x1-x0;
+                  ; dy = (unsigned char)abs((signed char)y1-(signed char)y0);
+
+                  lda tmp3
+                  sec
+                  sbc tmp1
+                  sta tmp6    ; dx = tmp6
+
+                  lda tmp4
+                  sec
+                  sbc tmp2
+                  jsr abs
+                  sta tmp7    ; dy = tmp7
+
+                  ; err = dx/2;
+
+                  lda tmp6
+                  lsr
+                  sta tmp8    ; err = tmp8
+
+                  ;if (y0 < y1) {
+                  ;      ystep = 1;
+                  ;} else {
+                  ;      ystep = -1;
+                  ;}
+
+                  lda tmp2
+                  cmp tmp4
+                  bcs @neg
+                  lda #1
+                  sta tmp4    ; ystep = tmp4 = 1 (at this point y1 no longer needed so reuse tmp4)
+                  jmp @next
+@neg:
+                  lda #$ff    ; ystep = tmp4 = -1
+                  sta tmp4            
+@next:
+
+                  tya
+                  bne @steep
+@shallow:
+
+                  
+                  jmp @done
+@steep:
+
+                  ;for (; x0<=x1; ++x0) {
+                  ;      SET_PIXEL(y0, x0, c);
+
+                  ;      err -= dy;
+                  ;      if (err < 0) {
+                  ;            y0 += ystep;
+                  ;            err += dx;
+                  ;      }
+                  ;}
+
+                  lda tmp3
+                  cmp tmp1
+                  bcc @done
+
+                  ; set pixel
+                  lda tmp1
+                  pha
+                  lda tmp2
+                  pha
+                  lda tmp3
+                  pha
+                  lda tmp4
+                  pha
+                  lda tmp5
+                  pha
+
+                  ldy tmp1          ; x0 in y
+                  ldx tmp2          ; y0 in x
+                  sta tmp1          ; put c in tmp1
+                  sty tmp2          ; put x0 in tmp2           
+                  stx tmp3          ; put y0 in tmp3
+
+                  jsr set_pixel_noargs
+
+                  pla
+                  sta tmp5
+                  pla
+                  sta tmp4
+                  pla
+                  sta tmp3
+                  pla
+                  sta tmp2
+                  pla
+                  sta tmp1
+
+                  lda tmp8
+                  sec
+                  sbc tmp7
+                  sta tmp8
+                  bpl @errpos
+
+                  clc
+                  lda tmp2
+                  adc tmp4
+                  sta tmp2
+
+                  clc
+                  lda tmp8
+                  adc tmp6
+                  sta tmp8
+
+@errpos:
+                  inc tmp1
+                  jmp @steep
+@done:
+                  rts
+
+; abs of a
+abs:
+                  and #$ff
+                  bpl @found
+                  eor #$ff
+                  clc
+                  adc #1  
+@found:
+                  rts
+                  
 
 ; Drawn from $3C00
 display:              

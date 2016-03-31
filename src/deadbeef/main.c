@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "../common/io.h"
 #include "../common/util.h"
-#include "../common/display.h"
+//#include "../common/display.h"
 #include "../common/api.h"
 #include "../common/game.h"
 
@@ -154,8 +154,8 @@ int main() {
 		
 
 		if (_saucer_abducting == 1) {
-			drawLine(_saucer_x + 6, _saucer_y + 8, _saucer_x + 6 - 16, 63, 1);
-			drawLine(_saucer_x + 9, _saucer_y + 8, _saucer_x + 6 + 16, 63, 1);
+			DRAW_LINE(_saucer_x + 6, _saucer_y + 8, _saucer_x + 6 - 16, 63, 1);
+			DRAW_LINE(_saucer_x + 9, _saucer_y + 8, _saucer_x + 6 + 16, 63, 1);
 		}
 
 		DISPLAY();
@@ -326,8 +326,8 @@ int main() {
 				_saucer_abducting = 0;
 				play_effect(0);
 
-				drawLine(_saucer_x + 6, _saucer_y + 8, _saucer_x + 6 - 16, 63, 0);
-				drawLine(_saucer_x + 9, _saucer_y + 8, _saucer_x + 6 + 16, 63, 0);
+				DRAW_LINE(_saucer_x + 6, _saucer_y + 8, _saucer_x + 6 - 16, 63, 0);
+				DRAW_LINE(_saucer_x + 9, _saucer_y + 8, _saucer_x + 6 + 16, 63, 0);
 				
 				if (_cowState == ABDUCTING) {
 					_cowState = FALLING;

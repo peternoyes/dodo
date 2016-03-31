@@ -3,3 +3,4 @@
 .import draw_sprite
 .import clear_sprite
 .import set_pixel
+.import draw_line
