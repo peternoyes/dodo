@@ -99,21 +99,21 @@ ssd1305_init:
 
 ;void setPixel(unsigned char x, unsigned char y, unsigned char c)
  set_pixel:
-                  sta tmp1          ; c
+                  sta tmp5          ; c
                   jsr tramp_popa
-                  sta tmp2          ; y
+                  sta tmp1          ; y
                   jsr tramp_popa
-                  sta tmp3          ; x
+                  sta tmp2          ; x
 set_pixel_noargs:                   ; alternate entry point
 
-                  lda tmp2          ; calculate %
+                  lda tmp1          ; calculate %
                   and #$07
                   sta tmp4
-                  lda tmp2
+                  lda tmp1
                   lsr
                   lsr
                   lsr
-                  sta tmp5          ; Page
+                  sta tmp3          ; Page
 
                   lda #$00          ; pointer to vmem
                   sta ptr1
@@ -121,7 +121,7 @@ set_pixel_noargs:                   ; alternate entry point
                   sta ptr1+1
 
                   ; Calculate offset into vmem based on page
-                  lda tmp5          ; Load page into a
+                  lda tmp3          ; Load page into a
                   jsr multiply_128  ; a/x = page * 128
                   adc ptr1
                   sta ptr1
@@ -135,12 +135,12 @@ set_pixel_noargs:                   ; alternate entry point
                   lda #>shift_table
                   sta ptr2+1
 
-                  lda tmp1
+                  lda tmp5
                   beq @clear
 
                   ldy tmp4
                   lda (ptr2), y
-                  ldy tmp3
+                  ldy tmp2
                   ora (ptr1), y
                   sta (ptr1), y
                   rts
@@ -149,7 +149,7 @@ set_pixel_noargs:                   ; alternate entry point
                   ldy tmp4
                   lda (ptr2), y
                   eor #$ff
-                  ldy tmp3
+                  ldy tmp2
                   and (ptr1), y
                   sta (ptr1), y
                   rts       
@@ -647,36 +647,18 @@ draw_line:
                   cmp tmp1
                   bcc @done
 
-                  ; set pixel
-                  lda tmp1
-                  pha
-                  lda tmp2
-                  pha
-                  lda tmp3
+                  
+                  lda tmp3          ; Save tmp3, and tmp4 because they will be modified by set pixel
                   pha
                   lda tmp4
                   pha
-                  lda tmp5
-                  pha
 
-                  ldy tmp1          ; x0 in y
-                  ldx tmp2          ; y0 in x
-                  sta tmp1          ; put c in tmp1
-                  sty tmp2          ; put x0 in tmp2           
-                  stx tmp3          ; put y0 in tmp3
+                  jsr set_pixel_noargs    ; x0, y0 and c are already in correct memory locations for set_pixel
 
-                  jsr set_pixel_noargs
-
-                  pla
-                  sta tmp5
                   pla
                   sta tmp4
                   pla
                   sta tmp3
-                  pla
-                  sta tmp2
-                  pla
-                  sta tmp1
 
                   lda tmp8
                   sec

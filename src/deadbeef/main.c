@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../common/io.h"
-#include "../common/util.h"
-//#include "../common/display.h"
 #include "../common/api.h"
 #include "../common/game.h"
 
@@ -123,7 +121,7 @@ int main() {
 
 		DISPLAY();
 		for (i = 0; i < 8; ++i) {
-			delay_ms(255);
+			DELAY_MS(255);
 		}
 	} 
 
