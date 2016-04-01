@@ -1,7 +1,4 @@
                 .include "zeropage.inc65"
-                .include "display.inc65"
-                .include "util.inc65"
-                .include "io.inc65"
 
                 .setcpu "6502"
 
@@ -19,34 +16,9 @@
                .import initlib
                .import donelib                
 
-                .segment "VECTORS"
-                .addr nmi
-                .addr _init
-                .addr irq
+        
 
                 .segment "STARTUP"
-
-nmi:            rti
-
-irq:                    
-                pha
-                txa
-                pha
-                tya
-                pha
-
-                clc
-                cld
-                clv
-                jsr irq_reset       ; Mark interrupt as read
-                
-                pla
-                tay
-                pla
-                tax
-                pla
-
-                rti
 
 _init:
                 sei                
@@ -64,12 +36,7 @@ _init:
                 jsr copydata
                 jsr initlib
 
-                jsr ssd1305_init
-                jsr io_init
-                cli                 ; Turn interrupts on
-
-                ;jsr serial_init
-                ;jsr serial_alive
+                cli
 
                 jsr _main
 

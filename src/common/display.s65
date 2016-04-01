@@ -54,9 +54,9 @@
 
                   .macro dco cmd, offset
                     lda #offset
-                    sta R1
+                    sta ptr1
                     lda #cmd
-                    adc R1
+                    adc ptr1
                     sta SSD1305_COMMAND
                   .endmacro
 
@@ -93,7 +93,40 @@ ssd1305_init:
                   dc $3F
                   dc $3F
                   dc $3F
+                  jsr splash
                   dc SSD1305_DISPLAYON
+                  rts
+
+splash:
+                  lda #$00
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  lda #<dodo
+                  sta ptr2
+                  lda #>dodo
+                  sta ptr2+1
+
+                  ldy #0
+                  ldx #4
+
+@loop:
+                  lda (ptr2), y
+                  sta (ptr1), y
+
+                  iny
+                  bne @loop
+
+                  dex
+                  beq @done
+
+                  inc ptr1+1
+                  inc ptr2+1
+
+                  jmp @loop
+@done:
+                  jsr display
                   rts
 
 
@@ -624,13 +657,62 @@ draw_line:
                   lda #$ff    ; ystep = tmp4 = -1
                   sta tmp4            
 @next:
-
                   tya
                   bne @steep
-@shallow:
 
-                  
-                  jmp @done
+                  lda tmp1    ; switch x/y for shallow case
+                  ldx tmp2
+                  sta tmp2
+                  stx tmp1
+
+@shallow:
+                  ;for (; x0<=x1; ++x0) {
+                  ;      SET_PIXEL(x0, y0, c);
+
+                  ;      err -= dy;
+                  ;      if (err < 0) {
+                  ;            y0 += ystep;
+                  ;            err += dx;
+                  ;      }
+                  ;}
+
+                  lda tmp3
+                  cmp tmp2
+                  bcc @done
+
+                  lda tmp3          ; Save tmp3, and tmp4 because they will be modified by set pixel
+                  pha
+                  lda tmp4
+                  pha
+
+                  jsr set_pixel_noargs    ; x0, y0 and c are already in correct memory locations for set_pixel
+
+                  pla
+                  sta tmp4
+                  pla
+                  sta tmp3
+
+                  lda tmp8
+                  sec
+                  sbc tmp7
+                  sta tmp8
+                  bpl @errpos_steep
+
+                  clc
+                  lda tmp1
+                  adc tmp4
+                  sta tmp1
+
+                  clc
+                  lda tmp8
+                  adc tmp6
+                  sta tmp8
+
+
+@errpos_shallow:
+                  inc tmp2
+                  jmp @shallow
+
 @steep:
 
                   ;for (; x0<=x1; ++x0) {
@@ -664,7 +746,7 @@ draw_line:
                   sec
                   sbc tmp7
                   sta tmp8
-                  bpl @errpos
+                  bpl @errpos_steep
 
                   clc
                   lda tmp2
@@ -676,7 +758,7 @@ draw_line:
                   adc tmp6
                   sta tmp8
 
-@errpos:
+@errpos_steep:
                   inc tmp1
                   jmp @steep
 @done:
@@ -698,22 +780,22 @@ display:
                   clc
                   clv   
                   lda #$00
-                  sta R0
+                  sta ptr1
                   lda #$3C
-                  sta R0 + 1
+                  sta ptr1 + 1
 
                   ldx #$0
                   ldy #$0
 
 @next_page_group: lda #SSD1305_SETPAGESTART  ; even pages (0, 2, 4, 6)
-                  stx R1
-                  adc R1
+                  stx ptr2
+                  adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
                   dc $00
                   dc $10
 
                   ; loop y < 128
-@byte_loop1:      lda (R0), y
+@byte_loop1:      lda (ptr1), y
                   sta SSD1305_DATA
                   iny
                   bpl @byte_loop1
@@ -721,22 +803,24 @@ display:
                   ; odd pages (1, 3, 5, 7)
                   inx
                   lda #SSD1305_SETPAGESTART
-                  stx R1
-                  adc R1
+                  stx ptr2
+                  adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
                   dc $00
                   dc $10
                   ; loop y < 256
-@byte_loop2:      lda (R0), y
+@byte_loop2:      lda (ptr1), y
                   sta SSD1305_DATA
                   iny
                   bne @byte_loop2
-                  inc R0 + 1                ; update pointer to the next block of 256
+                  inc ptr1 + 1                ; update pointer to the next block of 256
                   inx
-                  stx R1
+                  stx ptr2
                   lda #8
-                  bit R1
+                  bit ptr2
                   beq @next_page_group
                   rts
 
 shift_table:               .byte 1, 2, 4, 8, 16, 32, 64, 128
+
+dodo:           .byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $7f, $3f, $bf, $9f, $df, $df, $df, $df, $df, $df, $9f, $bf, $7f, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $7f, $3f, $9f, $df, $df, $df, $df, $1f, $5f, $df, $df, $bf, $bf, $87, $91, $0c, $4e, $7e, $7e, $3c, $01, $8f, $ef, $e7, $f7, $f7, $cf, $1f, $ff, $fc, $01, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $3f, $c7, $f1, $fc, $fe, $ff, $ff, $ff, $7f, $7f, $3f, $bf, $3c, $01, $bf, $bf, $bf, $bf, $9f, $df, $cf, $e7, $ff, $ff, $f8, $f4, $f4, $f7, $77, $73, $38, $8e, $a7, $b8, $be, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $3f, $7f, $7f, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $f8, $f3, $ef, $c7, $f3, $f9, $fe, $fc, $f9, $fb, $f9, $f8, $fb, $fb, $fb, $3b, $8b, $e3, $f1, $f9, $fd, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $fe, $fd, $fb, $f7, $c7, $13, $7b, $f9, $fd, $fd, $fd, $fd, $3d, $db, $db, $b7, $8f, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $c1, $1c, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $1f, $43, $f9, $fd, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $fd, $fb, $77, $37, $af, $cf, $ff, $ff, $ff, $ff, $ff, $ff, $78, $03, $7f, $3f, $9f, $cf, $e3, $f8, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $f8, $e7, $cf, $3f, $7f, $ff, $ff, $ff, $ff, $fc, $f9, $f7, $f7, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $f7, $f3, $fb, $f9, $fd, $fc, $fe, $ff, $ff, $ff, $7f, $3f, $9f, $cf, $f3, $f8, $fe, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $fc, $fd, $f9, $03, $f7, $f7, $f7, $e7, $e7, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $0f, $ef, $ef, $e7, $f7, $f3, $f3, $f9, $fc, $fe, $fe, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $f7, $f7, $fb, $fb, $c0, $fb, $fb, $f7, $ef, $ff, $ff, $ff, $ff, $ff, $ef, $f7, $fb, $fb, $80, $fb, $fb, $fb, $f7, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff

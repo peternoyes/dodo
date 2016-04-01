@@ -13,9 +13,6 @@
 .globalzp ptr2
 .globalzp ptr3
 .globalzp ptr4
-.globalzp R0
-.globalzp R1
-.globalzp R2
 .globalzp irq_status
 .globalzp music_mem
 .globalzp music_index

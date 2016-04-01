@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../common/io.h"
 #include "../common/api.h"
 #include "../common/game.h"
 
@@ -90,43 +89,17 @@ int main() {
 	unsigned char fart = 0;
 	unsigned char i = 0;
 
-	unsigned char manufID;
-	unsigned char den;
-	unsigned char prodID;
-
 	api_init();
 
-	getSpiDevice(&manufID, &den, &prodID);
+	fullscreenImage((unsigned char*)_title);
 
-	if (manufID == 0x04 && den == 0x03 /*&& prodID == 0x0302*/) {
-		fullscreenImage((unsigned char*)_title);
-		DISPLAY();
-
-		frameCount = spiRead((unsigned int)0x0);
-		if (frameCount > 0x9) {
-			frameCount = 0;
-		}
-		DRAW_SPRITE(numbers + (frameCount * 8), 112, 48, 8, 8, 0);
-
-		++frameCount;
-		if (frameCount > 0x9) {
-			frameCount = 0;
-		}
-
-		spiWriteEnable(0x1);
-		spiWrite((unsigned int)0x0, frameCount);
-		spiWriteEnable(0x0);
-
-		frameCount = 0;
-
-		DISPLAY();
-		for (i = 0; i < 8; ++i) {
-			DELAY_MS(255);
-		}
-	} 
+	DISPLAY();
+	for (i = 0; i < 8; ++i) {
+		DELAY_MS(255);
+	}
 
 	setTiles((unsigned char*)_deadbeef_tiles);
-	load_music((unsigned char*)_music);
+	LOAD_MUSIC((unsigned char*)_music);
 
 	drawPlayfield();
 	DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0);
@@ -309,7 +282,7 @@ int main() {
 		if (((keys & 16) == 0) && (_lives > 0)) {
 			if (_saucer_abducting == 0) {
 				_saucer_abducting = 1;
-				play_effect((unsigned char*)_abduction_effect);
+				PLAY_EFFECT((unsigned char*)_abduction_effect);
 			}
 
 			if (_cowState != ABDUCTING && _cowState != REGENERATING) {
@@ -322,7 +295,7 @@ int main() {
 		} else {
 			if (_saucer_abducting) {
 				_saucer_abducting = 0;
-				play_effect(0);
+				PLAY_EFFECT(0);
 
 				DRAW_LINE(_saucer_x + 6, _saucer_y + 8, _saucer_x + 6 - 16, 63, 0);
 				DRAW_LINE(_saucer_x + 9, _saucer_y + 8, _saucer_x + 6 + 16, 63, 0);
@@ -333,9 +306,9 @@ int main() {
 			}
 		}
 
-		led_on();
-		wait();
-		led_off();
+		LED_ON();
+		WAIT();
+		LED_OFF();
 	}
 
 	for (;;) {

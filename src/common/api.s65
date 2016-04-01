@@ -1,5 +1,6 @@
 					.include "display.inc65"
 					.include "util.inc65"
+					.include "io.inc65"
 					.include "zeropage.inc65"
 
 					.setcpu "6502"
@@ -19,15 +20,15 @@ trampoline:
 
 					ldx tramp
 					lda funcs_low, x
-					sta R0
+					sta ptr1
 					lda funcs_high, x
-					sta R0+1
+					sta ptr1+1
 
 					pla
 					tax
 					pla
 
-					jmp (R0)
+					jmp (ptr1)
 
 tramp_popa:
 					lda	tramp_sp
@@ -69,5 +70,5 @@ tramp_popax:
 					rts
 
 
-funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms
-funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms
+funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write
+funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write

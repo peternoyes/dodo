@@ -1,19 +1,27 @@
             .include "zeropage.inc65"
             .include "util.inc65"
 
-		.export _led_on
-		.export _led_off
-            .export _wait
-            .export _load_music
-            .export _play_effect
+		.export led_on
+		.export led_off
+            .export wait
+            .export load_music
+            .export play_effect
             .export io_init
             .export irq_reset
             .export serial_init
             .export serial_alive
-            .export _spi_enable
-            .export _spi_disable
-            .export _spi_write
+            .export spi_enable
+            .export spi_disable
+            .export spi_write
+            .export load_game
 
+            SPI_WREN = $06
+            SPI_WRDI = $04
+            SPI_RDSR = $05
+            SPI_WRSR = $01
+            SPI_READ = $03
+            SPI_WRIT = $02
+            SPI_RDID = $9F
 
             PORTB = $6000
             PORTA = $6001
@@ -48,12 +56,12 @@
 
 		.code
 
-_led_on:
+led_on:
 		ldx #%11000000
             stx PORTA  
 		rts
 
-_led_off:
+led_off:
 		ldx #%00000000
             stx PORTA  			
             rts
@@ -109,12 +117,12 @@ io_init:
             sta T2CL
             rts
 
-_load_music:
+load_music:
             sta music_mem
             stx music_mem + 1
             rts
 
-_play_effect:
+play_effect:
             sta effect_mem
             stx effect_mem + 1
             lda #0
@@ -202,7 +210,7 @@ irq_reset:
             jmp process_music
             rts
 
-_wait:
+wait:
             lda #0
             sta irq_status
 @loop:      lda irq_status
@@ -210,19 +218,19 @@ _wait:
             rts
 
 ; void spi_enable()
-_spi_enable:
+spi_enable:
             lda #%00111100
             sta PORTB
             rts
 
 ; void spi_disable()
-_spi_disable:
+spi_disable:
             lda #%00111110
             sta PORTB
             rts
 
 ; unsigned char spi_write(unsigned char v)
-_spi_write:
+spi_write:
             sta tmp1
             ldy #0
             sty tmp2
@@ -249,6 +257,56 @@ _spi_write:
             ldx #0
             rts
 
+load_game:
+            lda #$00
+            sta ptr1
+            lda #$1c
+            sta ptr1+1
+
+            jsr spi_enable
+
+            lda #SPI_READ
+            jsr spi_write
+
+            lda #0
+            jsr spi_write
+            jsr spi_write
+
+            ldy #0
+            ldx #32
+
+@loop:
+            tya
+            pha
+            txa
+            pha
+
+            lda #0
+            jsr spi_write
+            sta tmp1
+            
+            pla
+            tax
+            pla
+            tay
+            
+            lda tmp1      
+
+            sta (ptr1), y
+
+            iny
+            bne @loop
+
+            dex
+            beq @done
+
+            inc ptr1+1
+            jmp @loop
+
+@done:
+            jsr spi_disable
+            rts
+
 
 text:               .byte "0xDEADBEEF", $0d, $0a, $00
-;music:   .byte _D1, 2, 0, 1, _D1, 2, 0, 1, _D1, 3, _G1, 18, _D2, 18, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _A, 3, _G2, 18, _D2, 9, _C, 3, _B, 3, _C, 3, _A, 18, 0, 0
+

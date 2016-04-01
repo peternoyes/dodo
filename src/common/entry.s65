@@ -1,0 +1,59 @@
+                .include "zeropage.inc65"
+                .include "display.inc65"
+                .include "util.inc65"
+                .include "io.inc65"
+
+                .setcpu "6502"
+
+                .export _init
+                .export _exit
+
+
+                .segment "VECTORS"
+                .addr nmi
+                .addr _init
+                .addr irq
+
+                .code
+
+nmi:            rti
+
+irq:                    
+                pha
+                txa
+                pha
+                tya
+                pha
+
+                clc
+                cld
+                clv
+                jsr irq_reset       ; Mark interrupt as read
+                
+                pla
+                tay
+                pla
+                tax
+                pla
+
+                rti
+
+_init:
+                sei                
+                cld
+                clv
+                ldx #$ff
+                txs
+
+                jsr ssd1305_init
+                jsr io_init
+
+                jsr load_game
+
+                ;jsr serial_init
+                ;jsr serial_alive
+
+                jmp $1d00
+
+_exit:          
+end:            jmp end

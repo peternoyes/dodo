@@ -9,12 +9,12 @@
 ; This is hardcoded for a 1 MHz system clock
 ; @in A (delay) The delay in ms
 ; @mod R1
-delay_ms:          sta R1        ; 3
+delay_ms:           sta tmp1        ; 3
                     txa           ; 2
                     pha           ; 3
                     tya           ; 2
                     pha           ; 3
-                    ldx R1        ; 3
+                    ldx tmp1        ; 3
 
                     ldy #190      ; 2
 @loop1:             dey           ; 190 * 2
@@ -34,5 +34,5 @@ delay_ms:          sta R1        ; 3
                     tay           ; 2
                     pla           ; 4
                     tax           ; 2
-                    lda R1        ; 3
+                    lda tmp1      ; 3
                     rts           ; 6 (+ 6 for JSR)
