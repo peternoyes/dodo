@@ -9,11 +9,12 @@
             .export io_init
             .export irq_reset
             .export serial_init
-            .export serial_alive
+            .export serial_copy
             .export spi_enable
             .export spi_disable
             .export spi_write
             .export load_game
+            .export flash_game
 
             SPI_WREN = $06
             SPI_WRDI = $04
@@ -186,22 +187,51 @@ serial_init:
             sta ACIA_CONTROL
             rts
 
-serial_alive:
-            ldx #0
-@next_char:
-@wait_txd_empty:     
+serial_putc:
+            pha
+@wait_txd_empty:
             lda ACIA_STATUS
             and #$10
             beq @wait_txd_empty
-            lda text,x
-            beq @done
+            pla
             sta ACIA_DATA
-            inx
-            jmp @next_char
-@done:
             rts
 
+serial_getc:
+@wait_rxd_full:
+            lda ACIA_STATUS
+            and #$08
+            beq @wait_rxd_full
+            lda ACIA_DATA
+            rts
 
+serial_copy:
+            lda #'R'
+            jsr serial_putc
+
+            lda #$00
+            sta ptr1
+            lda #$1c
+            sta ptr1+1
+
+            ldy #0
+            ldx #32
+
+@loop:
+            jsr serial_getc           
+            sta (ptr1), y
+
+            iny
+            bne @loop
+
+            dex
+            beq @done
+
+            inc ptr1+1
+            jmp @loop
+
+@done:
+            rts
 
 irq_reset:
             bit T1CL        ; Mark interrupt as read
@@ -270,6 +300,7 @@ load_game:
 
             lda #0
             jsr spi_write
+            lda #0
             jsr spi_write
 
             ldy #0
@@ -307,6 +338,62 @@ load_game:
             jsr spi_disable
             rts
 
+flash_game:
+            lda #$00
+            sta ptr1
+            lda #$1c
+            sta ptr1+1
 
-text:               .byte "0xDEADBEEF", $0d, $0a, $00
+            jsr spi_enable
+            lda #SPI_WREN
+            jsr spi_write
+            jsr spi_disable
+
+            jsr spi_enable
+
+
+            lda #SPI_WRIT
+            jsr spi_write
+
+            lda #0
+            jsr spi_write
+            lda #0
+            jsr spi_write
+
+            ldy #0
+            ldx #32
+
+@loop:
+            tya
+            pha
+            txa
+            pha
+
+            lda (ptr1), y
+            jsr spi_write
+
+            pla
+            tax
+            pla
+            tay
+
+            iny
+            bne @loop
+
+            dex
+            beq @done
+
+            inc ptr1+1
+            jmp @loop
+
+@done:
+            jsr spi_disable
+
+            jsr spi_enable
+            lda #SPI_WRDI
+            jsr spi_write
+            jsr spi_disable
+
+            rts
+
 

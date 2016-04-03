@@ -696,7 +696,7 @@ draw_line:
                   sec
                   sbc tmp7
                   sta tmp8
-                  bpl @errpos_steep
+                  bpl @errpos_shallow
 
                   clc
                   lda tmp1
@@ -730,7 +730,7 @@ draw_line:
                   bcc @done
 
                   
-                  lda tmp3          ; Save tmp3, and tmp4 because they will be modified by set pixel
+                  ; Save tmp3 (aready in a, and tmp4 because they will be modified by set pixel
                   pha
                   lda tmp4
                   pha
@@ -746,7 +746,12 @@ draw_line:
                   sec
                   sbc tmp7
                   sta tmp8
-                  bpl @errpos_steep
+                  bmi @errneg_steep
+
+                  inc tmp1
+                  bne @steep ; Simulated branch always
+
+@errneg_steep:
 
                   clc
                   lda tmp2
@@ -758,9 +763,8 @@ draw_line:
                   adc tmp6
                   sta tmp8
 
-@errpos_steep:
                   inc tmp1
-                  jmp @steep
+                  bne @steep  ; Simulated branch always
 @done:
                   rts
 

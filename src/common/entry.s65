@@ -48,10 +48,27 @@ _init:
                 jsr ssd1305_init
                 jsr io_init
 
-                jsr load_game
 
-                ;jsr serial_init
-                ;jsr serial_alive
+@wait_key:
+                lda $6001
+                pha
+                and #16
+                beq @load
+                pla
+                and #32
+                beq @flash
+                jmp @wait_key
+
+@flash:
+                jsr led_off
+                jsr serial_init
+                jsr serial_copy
+                jsr led_on
+                jsr flash_game
+                jsr led_off
+
+@load:
+                jsr load_game
 
                 jmp $1d00
 

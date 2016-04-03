@@ -70,6 +70,7 @@ void api_init() {
 	spi_write_proto = (byte (*)(byte))(*(int*)0xFFF8);
 }
 
+/*
 void getSpiDevice(unsigned char* manufacturer, unsigned char* density, unsigned char* product) {
 	SPI_ENABLE();
 	SPI_WRITE(SPI_RDID);
@@ -112,6 +113,6 @@ void spiWrite(unsigned int a, unsigned char v) {
 	SPI_WRITE(((byte)(a & 0xFF)));
 	SPI_WRITE(v);
 	SPI_DISABLE();
-}
+}*/
 
 #endif

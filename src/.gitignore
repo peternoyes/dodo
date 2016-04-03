@@ -2,5 +2,7 @@
 *.lst
 *.map
 *.s
+*.bin
+deadbeef
 firmware
 ramtest
