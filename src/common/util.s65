@@ -1,6 +1,8 @@
-.include "zeropage.inc65"
+            .include "zeropage.inc65"
+            .include "api.inc65"
 
             .export delay_ms
+
 
             .code
 
@@ -9,7 +11,9 @@
 ; This is hardcoded for a 1 MHz system clock
 ; @in A (delay) The delay in ms
 ; @mod R1
-delay_ms:           sta tmp1        ; 3
+delay_ms:           
+                    jsr tramp_popa
+                    sta tmp1      ; 3
                     txa           ; 2
                     pha           ; 3
                     tya           ; 2

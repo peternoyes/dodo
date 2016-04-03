@@ -11,38 +11,36 @@
 #define SPI_WRIT  0x02
 #define SPI_RDID  0x9F
 
-#define DRAW_SPRITE(sprite, x, y, w, h, f) SET_INDEX(0); draw_sprite_proto(sprite, x, y, w, h, f)
-#define DISPLAY() SET_INDEX(1); display_proto()
-#define CLEAR_SPRITE(x, y, w, h) SET_INDEX(2); clear_sprite_proto(x, y, w, h)
-#define SET_PIXEL(x, y, c) SET_INDEX(3); set_pixel_proto(x, y, c)
-#define DRAW_LINE(x0, y0, x1, y1, c) SET_INDEX(4); draw_line_proto(x0, y0, x1, y1, c)
-#define DELAY_MS(delay) SET_INDEX(5); delay_ms_proto(delay)
-#define LED_ON() SET_INDEX(6); led_on_proto()
-#define LED_OFF() SET_INDEX(7); led_off_proto()
-#define WAIT() SET_INDEX(8); wait_proto()
-#define LOAD_MUSIC(music) SET_INDEX(9); load_music_proto(music)
-#define PLAY_EFFECT(effect) SET_INDEX(10); play_effect_proto(effect)
-#define SPI_ENABLE() SET_INDEX(11); spi_enable_proto()
-#define SPI_DISABLE() SET_INDEX(12); spi_disable_proto()
-#define SPI_WRITE(v) SET_INDEX(13); spi_write_proto(v)
-#define SPI_WRITE_R(v, r) SET_INDEX(13); r = spi_write_proto(v)
+#define DRAW_SPRITE(sprite, x, y, w, h, f) draw_sprite_proto(sprite, x, y, w, h, f, 0)
+#define DISPLAY() display_proto(1)
+#define CLEAR_SPRITE(x, y, w, h) clear_sprite_proto(x, y, w, h, 2)
+#define SET_PIXEL(x, y, c) set_pixel_proto(x, y, c, 3)
+#define DRAW_LINE(x0, y0, x1, y1, c) draw_line_proto(x0, y0, x1, y1, c, 4)
+#define DELAY_MS(delay) delay_ms_proto(delay, 5)
+#define LED_ON() led_on_proto(6)
+#define LED_OFF() led_off_proto(7)
+#define WAIT() wait_proto(8)
+#define LOAD_MUSIC(music) load_music_proto(music, 9)
+#define PLAY_EFFECT(effect) play_effect_proto(effect, 10)
+#define SPI_ENABLE() spi_enable_proto(11)
+#define SPI_DISABLE() spi_disable_proto(12)
+#define SPI_WRITE(v) spi_write_proto(v, 13)
 
-#define SET_INDEX(i) __A__ = i; asm("sta $0");
+static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte);
+static void (*display_proto)(byte);
+static void (*clear_sprite_proto)(byte, byte, byte, byte, byte);
+static void (*set_pixel_proto)(byte, byte, byte, byte);
+static void (*draw_line_proto)(byte, byte, byte, byte, byte, byte);
+static void (*delay_ms_proto)(byte, byte);
+static void (*led_on_proto)(byte);
+static void (*led_off_proto)(byte);
+static void (*wait_proto)(byte);
+static void (*load_music_proto)(byte*, byte);
+static void (*play_effect_proto)(byte*, byte);
+static void (*spi_enable_proto)(byte);
+static void (*spi_disable_proto)(byte);
+static byte (*spi_write_proto)(byte, byte);
 
-static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte);
-static void (*display_proto)(void);
-static void (*clear_sprite_proto)(byte x, byte y, byte w, byte h);
-static void (*set_pixel_proto)(byte x, byte y, byte c);
-static void (*draw_line_proto)(byte x0, byte y0, byte x1, byte y1, byte c);
-static void (*delay_ms_proto)(byte delay);
-static void (*led_on_proto)(void);
-static void (*led_off_proto)(void);
-static void (*wait_proto)(void);
-static void (*load_music_proto)(byte* music);
-static void (*play_effect_proto)(byte* effect);
-static void (*spi_enable_proto)(void);
-static void (*spi_disable_proto)(void);
-static byte (*spi_write_proto)(byte v);
 
 static unsigned char get_sp() {
 	asm("lda #sp");
@@ -52,22 +50,22 @@ static unsigned char get_sp() {
 void api_init() {
 	byte* sp_ptr = (byte*)get_sp();
 	__A__ = (byte)sp_ptr;
-	asm("sta $1");
+	asm("sta $0");
 
-	draw_sprite_proto = (void (*)(byte*, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
-	display_proto = (void (*)(void))(*(int*)0xFFF8);
-	clear_sprite_proto = (void (*)(byte x, byte y, byte w, byte h))(*(int*)0xFFF8);
-	set_pixel_proto = (void (*)(byte x, byte y, byte c))(*(int*)0xFFF8);
-	draw_line_proto = (void (*)(byte x0, byte y0, byte x1, byte y1, byte c))(*(int*)0xFFF8);
-	delay_ms_proto = (void (*)(byte))(*(int*)0xFFF8);
-	led_on_proto = (void (*)(void))(*(int*)0xFFF8);
-	led_off_proto = (void (*)(void))(*(int*)0xFFF8);
-	wait_proto = (void (*)(void))(*(int*)0xFFF8);
-	load_music_proto = (void (*)(byte*))(*(int*)0xFFF8);
-	play_effect_proto = (void (*)(byte*))(*(int*)0xFFF8);
-	spi_enable_proto = (void (*)(void))(*(int*)0xFFF8);
-	spi_disable_proto = (void (*)(void))(*(int*)0xFFF8);
-	spi_write_proto = (byte (*)(byte))(*(int*)0xFFF8);
+	draw_sprite_proto = (void (*)(byte*, byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
+	display_proto = (void (*)(byte))(*(int*)0xFFF8);
+	clear_sprite_proto = (void (*)(byte, byte, byte, byte, byte))(*(int*)0xFFF8);
+	set_pixel_proto = (void (*)(byte, byte, byte, byte))(*(int*)0xFFF8);
+	draw_line_proto = (void (*)(byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
+	delay_ms_proto = (void (*)(byte, byte))(*(int*)0xFFF8);
+	led_on_proto = (void (*)(byte))(*(int*)0xFFF8);
+	led_off_proto = (void (*)(byte))(*(int*)0xFFF8);
+	wait_proto = (void (*)(byte))(*(int*)0xFFF8);
+	load_music_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
+	play_effect_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
+	spi_enable_proto = (void (*)(byte))(*(int*)0xFFF8);
+	spi_disable_proto = (void (*)(byte))(*(int*)0xFFF8);
+	spi_write_proto = (byte (*)(byte, byte))(*(int*)0xFFF8);
 }
 
 /*

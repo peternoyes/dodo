@@ -14,20 +14,11 @@
 					.code
 
 trampoline:
-					pha
-					txa
-					pha
-
-					ldx tramp
+					tax
 					lda funcs_low, x
 					sta ptr1
 					lda funcs_high, x
 					sta ptr1+1
-
-					pla
-					tax
-					pla
-
 					jmp (ptr1)
 
 tramp_popa:

@@ -2,7 +2,6 @@
 
                   .zeropage
 
-tramp: 			  .res 1
 tramp_sp:		  .res 1
 sp:               .res 2
 sreg:             .res 2

@@ -132,6 +132,7 @@ splash:
 
 ;void setPixel(unsigned char x, unsigned char y, unsigned char c)
  set_pixel:
+                  jsr tramp_popa
                   sta tmp5          ; c
                   jsr tramp_popa
                   sta tmp1          ; y
@@ -189,6 +190,7 @@ set_pixel_noargs:                   ; alternate entry point
 
 ; void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
 clear_sprite:
+                  jsr tramp_popa
                   sta tmp1          ; h
                   jsr tramp_popa
                   sta tmp2          ; w
@@ -268,7 +270,8 @@ clear_sprite:
 
 ; drawing to #3C00
 ; void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
-draw_sprite:                  
+draw_sprite:         
+                  jsr tramp_popa         
                   sta tmp7          ; flip
                   jsr tramp_popa  
                   sta tmp1          ; h
@@ -565,6 +568,7 @@ multiply_128:
 draw_line:
                   ldy #0
 
+                  jsr tramp_popa
                   sta tmp5          ; c
                   jsr tramp_popa
                   sta tmp4          ; y1

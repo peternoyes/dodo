@@ -1,5 +1,6 @@
             .include "zeropage.inc65"
             .include "util.inc65"
+            .include "api.inc65"
 
 		.export led_on
 		.export led_off
@@ -119,11 +120,13 @@ io_init:
             rts
 
 load_music:
+            jsr tramp_popax
             sta music_mem
             stx music_mem + 1
             rts
 
 play_effect:
+            jsr tramp_popax
             sta effect_mem
             stx effect_mem + 1
             lda #0
@@ -261,6 +264,8 @@ spi_disable:
 
 ; unsigned char spi_write(unsigned char v)
 spi_write:
+            jsr tramp_popa
+spi_write_internal:
             sta tmp1
             ldy #0
             sty tmp2
@@ -296,12 +301,12 @@ load_game:
             jsr spi_enable
 
             lda #SPI_READ
-            jsr spi_write
+            jsr spi_write_internal
 
             lda #0
-            jsr spi_write
+            jsr spi_write_internal
             lda #0
-            jsr spi_write
+            jsr spi_write_internal
 
             ldy #0
             ldx #32
@@ -313,7 +318,7 @@ load_game:
             pha
 
             lda #0
-            jsr spi_write
+            jsr spi_write_internal
             sta tmp1
             
             pla
@@ -346,19 +351,19 @@ flash_game:
 
             jsr spi_enable
             lda #SPI_WREN
-            jsr spi_write
+            jsr spi_write_internal
             jsr spi_disable
 
             jsr spi_enable
 
 
             lda #SPI_WRIT
-            jsr spi_write
+            jsr spi_write_internal
 
             lda #0
-            jsr spi_write
+            jsr spi_write_internal
             lda #0
-            jsr spi_write
+            jsr spi_write_internal
 
             ldy #0
             ldx #32
@@ -370,7 +375,7 @@ flash_game:
             pha
 
             lda (ptr1), y
-            jsr spi_write
+            jsr spi_write_internal
 
             pla
             tax
@@ -391,7 +396,7 @@ flash_game:
 
             jsr spi_enable
             lda #SPI_WRDI
-            jsr spi_write
+            jsr spi_write_internal
             jsr spi_disable
 
             rts
