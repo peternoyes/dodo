@@ -141,28 +141,19 @@ splash:
 set_pixel_noargs:                   ; alternate entry point
 
                   lda tmp1          ; calculate %
+                  pha
                   and #$07
                   sta tmp4
-                  lda tmp1
+                  pla
                   lsr
                   lsr
-                  lsr
-                  sta tmp3          ; Page
+                  lsr               ; page now in a
 
-                  lda #$00          ; pointer to vmem
+                  tax
+                  lda page_mem_low, x
                   sta ptr1
-                  lda #$3C
+                  lda page_mem_high, x
                   sta ptr1+1
-
-                  ; Calculate offset into vmem based on page
-                  lda tmp3          ; Load page into a
-                  jsr multiply_128  ; a/x = page * 128
-                  adc ptr1
-                  sta ptr1
-                  txa
-                  adc ptr1+1
-                  sta ptr1+1
-                  clc
 
                   lda #<shift_table
                   sta ptr2
@@ -215,22 +206,15 @@ clear_sprite:
                   sta tmp1
 
 @load:
-                  lda #$00          ; pointer to vmem
-                  sta ptr1
-                  lda #$3C
-                  sta ptr1+1
-
-                  ; Calculate offset into vmem based on page
                   lda tmp5
-                  jsr multiply_128  ; a/x = page * 128
-                  adc ptr1
+                  tax
+                  lda page_mem_low, x
                   sta ptr1
-                  txa
-                  adc ptr1+1
+                  lda page_mem_high, x
                   sta ptr1+1
-                  clc
 
                   lda tmp4          ; add x to ptr1
+                  clc
                   adc ptr1
                   sta ptr1
                   lda #0
@@ -292,25 +276,16 @@ draw_sprite:
                   lda tmp3
                   lsr               ; divide by 8
                   lsr
-                  lsr
-                  sta tmp6          ; Page
+                  lsr               ; Page now in a
 
-                  lda #$00          ; pointer to vmem
+                  tax
+                  lda page_mem_low, x
                   sta ptr1
-                  lda #$3C
+                  lda page_mem_high, x
                   sta ptr1+1
-
-                  ; Calculate offset into vmem based on page
-                  lda tmp6          ; Load page into a
-                  jsr multiply_128  ; a/x = page * 128
-                  adc ptr1
-                  sta ptr1
-                  txa
-                  adc ptr1+1
-                  sta ptr1+1
-                  clc
 
                   lda tmp4          ; add x to ptr1
+                  clc
                   adc ptr1
                   sta ptr1
                   lda #0
@@ -684,7 +659,7 @@ draw_line:
                   cmp tmp2
                   bcc @done
 
-                  lda tmp3          ; Save tmp3, and tmp4 because they will be modified by set pixel
+                  ; Save tmp3 (already in a), and tmp4 because they will be modified by set pixel
                   pha
                   lda tmp4
                   pha
@@ -699,23 +674,24 @@ draw_line:
                   lda tmp8
                   sec
                   sbc tmp7
+                  bmi @errneg_shallow
+
                   sta tmp8
-                  bpl @errpos_shallow
+                  inc tmp2
+                  bne @shallow ; Simulated branch always
+
+@errneg_shallow:
+                  clc
+                  adc tmp6
+                  sta tmp8
 
                   clc
                   lda tmp1
                   adc tmp4
                   sta tmp1
 
-                  clc
-                  lda tmp8
-                  adc tmp6
-                  sta tmp8
-
-
-@errpos_shallow:
                   inc tmp2
-                  jmp @shallow
+                  bne @shallow ; Simulated branch always
 
 @steep:
 
@@ -749,23 +725,21 @@ draw_line:
                   lda tmp8
                   sec
                   sbc tmp7
-                  sta tmp8
                   bmi @errneg_steep
 
+                  sta tmp8
                   inc tmp1
                   bne @steep ; Simulated branch always
 
 @errneg_steep:
+                  clc
+                  adc tmp6
+                  sta tmp8
 
                   clc
                   lda tmp2
                   adc tmp4
                   sta tmp2
-
-                  clc
-                  lda tmp8
-                  adc tmp6
-                  sta tmp8
 
                   inc tmp1
                   bne @steep  ; Simulated branch always
@@ -829,6 +803,9 @@ display:
                   beq @next_page_group
                   rts
 
-shift_table:               .byte 1, 2, 4, 8, 16, 32, 64, 128
+page_mem_low:     .byte $00, $80, $00, $80, $00, $80, $00, $80
+page_mem_high:    .byte $3C, $3C, $3D, $3D, $3E, $3E, $3F, $3F
 
-dodo:           .byte $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $7f, $3f, $bf, $9f, $df, $df, $df, $df, $df, $df, $9f, $bf, $7f, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $7f, $3f, $9f, $df, $df, $df, $df, $1f, $5f, $df, $df, $bf, $bf, $87, $91, $0c, $4e, $7e, $7e, $3c, $01, $8f, $ef, $e7, $f7, $f7, $cf, $1f, $ff, $fc, $01, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $3f, $c7, $f1, $fc, $fe, $ff, $ff, $ff, $7f, $7f, $3f, $bf, $3c, $01, $bf, $bf, $bf, $bf, $9f, $df, $cf, $e7, $ff, $ff, $f8, $f4, $f4, $f7, $77, $73, $38, $8e, $a7, $b8, $be, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $bf, $3f, $7f, $7f, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $f8, $f3, $ef, $c7, $f3, $f9, $fe, $fc, $f9, $fb, $f9, $f8, $fb, $fb, $fb, $3b, $8b, $e3, $f1, $f9, $fd, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $fe, $fd, $fb, $f7, $c7, $13, $7b, $f9, $fd, $fd, $fd, $fd, $3d, $db, $db, $b7, $8f, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $c1, $1c, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $1f, $43, $f9, $fd, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $fd, $fb, $77, $37, $af, $cf, $ff, $ff, $ff, $ff, $ff, $ff, $78, $03, $7f, $3f, $9f, $cf, $e3, $f8, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $f8, $e7, $cf, $3f, $7f, $ff, $ff, $ff, $ff, $fc, $f9, $f7, $f7, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $f7, $f3, $fb, $f9, $fd, $fc, $fe, $ff, $ff, $ff, $7f, $3f, $9f, $cf, $f3, $f8, $fe, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $fe, $fc, $fd, $f9, $03, $f7, $f7, $f7, $e7, $e7, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $ef, $0f, $ef, $ef, $e7, $f7, $f3, $f3, $f9, $fc, $fe, $fe, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $f7, $f7, $fb, $fb, $c0, $fb, $fb, $f7, $ef, $ff, $ff, $ff, $ff, $ff, $ef, $f7, $fb, $fb, $80, $fb, $fb, $fb, $f7, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+shift_table:      .byte 1, 2, 4, 8, 16, 32, 64, 128
+
+dodo:           .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $c0, $60, $30, $30, $10, $10, $10, $30, $30, $60, $60, $c0, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $e0, $e0, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $80, $80, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $e0, $e0, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $80, $80, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $c0, $60, $60, $20, $30, $30, $30, $70, $d0, $30, $30, $20, $20, $78, $6e, $d7, $b1, $81, $c1, $c3, $ff, $38, $98, $08, $08, $08, $38, $f0, $00, $81, $ff, $3c, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $ff, $ff, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $7e, $7e, $81, $81, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $ff, $ff, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $7e, $7e, $81, $81, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $70, $fe, $07, $01, $00, $00, $00, $80, $80, $c0, $40, $40, $e3, $ff, $60, $20, $20, $20, $20, $30, $30, $18, $08, $03, $07, $0d, $19, $99, $8c, $cc, $f7, $d9, $4c, $47, $41, $40, $40, $60, $60, $60, $60, $60, $60, $40, $40, $40, $c0, $c0, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $07, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $07, $07, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $03, $0f, $1c, $38, $0e, $03, $03, $02, $06, $04, $06, $07, $04, $04, $04, $e4, $7e, $0e, $06, $03, $00, $00, $00, $00, $00, $01, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $03, $02, $0e, $1c, $f6, $c2, $02, $03, $03, $83, $c3, $e2, $a2, $26, $3c, $38, $60, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $f0, $08, $04, $e4, $54, $e4, $04, $08, $f0, $00, $00, $f0, $50, $20, $00, $f0, $00, $00, $00, $e0, $50, $e0, $00, $70, $c0, $70, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $ff, $e0, $00, $00, $00, $00, $00, $00, $00, $f8, $fc, $07, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $03, $86, $cc, $48, $78, $30, $10, $00, $00, $00, $00, $00, $ff, $d0, $c0, $60, $31, $1c, $06, $03, $03, $06, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $81, $42, $24, $a5, $a4, $25, $24, $42, $81, $00, $00, $81, $80, $80, $00, $81, $01, $01, $00, $01, $80, $01, $00, $80, $81, $80, $00, $80, $00, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $1e, $38, $60, $c0, $80, $00, $00, $00, $03, $06, $0c, $08, $18, $18, $10, $10, $10, $10, $18, $18, $08, $0c, $0c, $06, $02, $03, $01, $00, $00, $00, $00, $80, $c0, $e0, $70, $18, $0e, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0f, $10, $20, $2f, $2a, $25, $20, $10, $0f, $00, $00, $0f, $02, $00, $00, $0f, $08, $08, $00, $0f, $02, $0f, $00, $0b, $0a, $0e, $00, $0f, $02, $0f, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $03, $fe, $fe, $04, $0c, $0c, $08, $18, $18, $18, $18, $18, $18, $f8, $f8, $18, $08, $08, $0c, $0c, $0c, $06, $06, $02, $03, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0c, $06, $02, $1f, $03, $06, $0c, $18, $00, $00, $00, $00, $00, $00, $18, $0c, $0f, $3e, $04, $04, $04, $0c, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $38, $44, $10, $28, $00, $44, $38, $00, $00, $7c, $14, $08, $00, $7c, $54, $44, $00, $04, $7c, $04, $00, $7c, $54, $44, $00, $7c, $14, $68, $00, $00, $00, $7c, $08, $10, $7c, $00, $38, $44, $38, $00, $1c, $70, $1c, $00, $7c, $54, $44, $00, $5c, $54, $74, $00, $40, $00, $00, $64, $54, $48, $00, $38, $44, $38, $00, $08, $7c, $00, $38, $54, $54, $20, $00, $00

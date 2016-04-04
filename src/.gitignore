@@ -4,5 +4,6 @@
 *.s
 *.bin
 deadbeef
+theclaw
 firmware
 ramtest
