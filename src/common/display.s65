@@ -45,7 +45,8 @@
                   .export draw_sprite
                   .export set_pixel
                   .export clear_sprite  
-                  .export draw_line        
+                  .export draw_line    
+                  .export clear    
 
                   .macro dc cmd
                     lda #cmd
@@ -131,19 +132,27 @@ splash:
 
 
 ;void setPixel(unsigned char x, unsigned char y, unsigned char c)
- set_pixel:
+set_pixel:
                   jsr tramp_popa
                   sta tmp5          ; c
                   jsr tramp_popa
                   sta tmp1          ; y
                   jsr tramp_popa
                   sta tmp2          ; x
+
+                  lda #<shift_table
+                  sta ptr2
+                  lda #>shift_table
+                  sta ptr2+1
+
 set_pixel_noargs:                   ; alternate entry point
 
                   lda tmp1          ; calculate %
                   pha
                   and #$07
-                  sta tmp4
+                  tay
+                  lda (ptr2), y
+                  sta tmp4          ; Store % in tmp4
                   pla
                   lsr
                   lsr
@@ -155,24 +164,17 @@ set_pixel_noargs:                   ; alternate entry point
                   lda page_mem_high, x
                   sta ptr1+1
 
-                  lda #<shift_table
-                  sta ptr2
-                  lda #>shift_table
-                  sta ptr2+1
-
                   lda tmp5
                   beq @clear
 
-                  ldy tmp4
-                  lda (ptr2), y
+                  lda tmp4
                   ldy tmp2
                   ora (ptr1), y
                   sta (ptr1), y
                   rts
 
 @clear:
-                  ldy tmp4
-                  lda (ptr2), y
+                  lda tmp4
                   eor #$ff
                   ldy tmp2
                   and (ptr1), y
@@ -240,10 +242,12 @@ clear_sprite:
                   lda #128          ; Load up next stripe
                   adc ptr1
                   sta ptr1
+                  bcc @skip_carry
                   lda #0
                   adc ptr1+1
                   sta ptr1+1
 
+@skip_carry:
                   ldy tmp2
                   dey
 
@@ -350,17 +354,21 @@ draw_sprite:
                   lda #128          ; Load up next stripe
                   adc ptr1
                   sta ptr1
+                  bcc @skip_carry_1
                   lda #0
                   adc ptr1+1
                   sta ptr1+1
 
                   clc
+@skip_carry_1:
                   lda tmp2
                   adc ptr2
                   sta ptr2
+                  bcc @skip_carry_2
                   lda #0
                   adc ptr2+1
                   sta ptr2+1
+@skip_carry_2:
 
                   ldy tmp2
                   dey
@@ -391,7 +399,7 @@ draw_sprite:
 
                   ldx #0
                   lda tmp7
-                  bne @complex_byte_flip  ; TODO: Jump to complex flip
+                  bne @complex_byte_flip  
 
 @complex_byte:                  
                   lda (ptr2), y     ; shift << into current row
@@ -553,6 +561,11 @@ draw_line:
                   sta tmp2          ; y0
                   jsr tramp_popa
                   sta tmp1          ; x0
+
+                  lda #<shift_table       ; Will be used inside of set_pixel
+                  sta ptr2
+                  lda #>shift_table
+                  sta ptr2+1
 
                   ; unsigned char steep = abs((signed char)y1-(signed char)y0) > abs((signed char)x1-(signed char)x0);
                   lda tmp4
@@ -802,6 +815,29 @@ display:
                   bit ptr2
                   beq @next_page_group
                   rts
+
+clear:
+                  clc
+                  clv
+                  lda #$00
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  lda #$0
+                  ldx #$4
+                  ldy #$0
+
+@loop:            sta (ptr1), y
+                  iny
+                  bne @loop
+                  clc
+                  inc ptr1+1
+                  dex
+                  bne @loop
+                  rts
+
+
 
 page_mem_low:     .byte $00, $80, $00, $80, $00, $80, $00, $80
 page_mem_high:    .byte $3C, $3C, $3D, $3D, $3E, $3E, $3F, $3F

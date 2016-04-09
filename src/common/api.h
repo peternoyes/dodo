@@ -25,6 +25,7 @@
 #define SPI_ENABLE() spi_enable_proto(11)
 #define SPI_DISABLE() spi_disable_proto(12)
 #define SPI_WRITE(v) spi_write_proto(v, 13)
+#define CLEAR() clear_proto(14)
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -40,6 +41,7 @@ static void (*play_effect_proto)(byte*, byte);
 static void (*spi_enable_proto)(byte);
 static void (*spi_disable_proto)(byte);
 static byte (*spi_write_proto)(byte, byte);
+static void (*clear_proto)(byte);
 
 
 static unsigned char get_sp() {
@@ -66,6 +68,7 @@ void api_init() {
 	spi_enable_proto = (void (*)(byte))(*(int*)0xFFF8);
 	spi_disable_proto = (void (*)(byte))(*(int*)0xFFF8);
 	spi_write_proto = (byte (*)(byte, byte))(*(int*)0xFFF8);
+	clear_proto = (void (*)(byte))(*(int*)0xFFF8);
 }
 
 /*
