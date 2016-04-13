@@ -1,0 +1,13 @@
+.globalzp sp
+.globalzp sreg
+.globalzp regsave
+.globalzp regbank
+.globalzp tmp1
+.globalzp tmp2
+.globalzp tmp3
+.globalzp tmp4
+.globalzp tmpstack
+.globalzp ptr1
+.globalzp ptr2
+.globalzp ptr3
+.globalzp ptr4

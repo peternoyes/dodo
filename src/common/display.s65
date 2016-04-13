@@ -1,6 +1,7 @@
                   .setcpu "6502"
 
                   .include "zeropage.inc65"
+                  .include "api.inc65"
 
                   SSD1305_COMMAND = $4800
                   SSD1305_DATA = $4801
@@ -40,7 +41,12 @@
                   SSD1305_SETVCOMLEVEL = $DB
 
                   .export ssd1305_init
-                  .export _display                  
+                  .export display      
+                  .export draw_sprite
+                  .export set_pixel
+                  .export clear_sprite  
+                  .export draw_line    
+                  .export clear    
 
                   .macro dc cmd
                     lda #cmd
@@ -49,9 +55,9 @@
 
                   .macro dco cmd, offset
                     lda #offset
-                    sta R1
+                    sta ptr1
                     lda #cmd
-                    adc R1
+                    adc ptr1
                     sta SSD1305_COMMAND
                   .endmacro
 
@@ -88,53 +94,754 @@ ssd1305_init:
                   dc $3F
                   dc $3F
                   dc $3F
+                  jsr splash
                   dc SSD1305_DISPLAYON
                   rts
 
+splash:
+                  lda #$00
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  lda #<dodo
+                  sta ptr2
+                  lda #>dodo
+                  sta ptr2+1
+
+                  ldy #0
+                  ldx #4
+
+@loop:
+                  lda (ptr2), y
+                  sta (ptr1), y
+
+                  iny
+                  bne @loop
+
+                  dex
+                  beq @done
+
+                  inc ptr1+1
+                  inc ptr2+1
+
+                  jmp @loop
+@done:
+                  jsr display
+                  rts
+
+
+;void setPixel(unsigned char x, unsigned char y, unsigned char c)
+set_pixel:
+                  jsr tramp_popa
+                  sta tmp5          ; c
+                  jsr tramp_popa
+                  sta tmp1          ; y
+                  jsr tramp_popa
+                  sta tmp2          ; x
+
+                  lda #<shift_table
+                  sta ptr2
+                  lda #>shift_table
+                  sta ptr2+1
+
+set_pixel_noargs:                   ; alternate entry point
+
+                  lda tmp1          ; calculate %
+                  pha
+                  and #$07
+                  tay
+                  lda (ptr2), y
+                  sta tmp4          ; Store % in tmp4
+                  pla
+                  lsr
+                  lsr
+                  lsr               ; page now in a
+
+                  tax
+                  lda page_mem_low, x
+                  sta ptr1
+                  lda page_mem_high, x
+                  sta ptr1+1
+
+                  lda tmp5
+                  beq @clear
+
+                  lda tmp4
+                  ldy tmp2
+                  ora (ptr1), y
+                  sta (ptr1), y
+                  rts
+
+@clear:
+                  lda tmp4
+                  eor #$ff
+                  ldy tmp2
+                  and (ptr1), y
+                  sta (ptr1), y
+                  rts       
+
+; void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
+clear_sprite:
+                  jsr tramp_popa
+                  sta tmp1          ; h
+                  jsr tramp_popa
+                  sta tmp2          ; w
+                  jsr tramp_popa
+                  sta tmp3          ; y
+                  jsr tramp_popa
+                  sta tmp4          ; x
+
+                  lda tmp3
+                  lsr
+                  lsr
+                  lsr
+                  sta tmp5          ; Page
+
+                  lda tmp3
+                  and #$07
+                  beq @load
+
+                  clc
+                  lda tmp1
+                  adc #8
+                  sta tmp1
+
+@load:
+                  lda tmp5
+                  tax
+                  lda page_mem_low, x
+                  sta ptr1
+                  lda page_mem_high, x
+                  sta ptr1+1
+
+                  lda tmp4          ; add x to ptr1
+                  clc
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+
+@start:           lda #0
+@next:            sta (ptr1), y
+                  dey
+                  bne @next
+                  sta (ptr1), y
+
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done    ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  bcc @skip_carry
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+@skip_carry:
+                  ldy tmp2
+                  dey
+
+                  jmp @start
+@done:
+                  rts                         
+
+
+; drawing to #3C00
+; void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
+draw_sprite:         
+                  jsr tramp_popa         
+                  sta tmp7          ; flip
+                  jsr tramp_popa  
+                  sta tmp1          ; h
+                  jsr tramp_popa
+                  sta tmp2          ; w
+                  jsr tramp_popa
+                  sta tmp3          ; y
+                  jsr tramp_popa
+                  sta tmp4          ; x
+                  jsr tramp_popax
+                  sta ptr2          ; sprite
+                  stx ptr2+1
+
+
+                  lda tmp3
+                  and #$07          ; calculate %
+                  sta tmp5
+                  lda tmp3
+                  lsr               ; divide by 8
+                  lsr
+                  lsr               ; Page now in a
+
+                  tax
+                  lda page_mem_low, x
+                  sta ptr1
+                  lda page_mem_high, x
+                  sta ptr1+1
+
+                  lda tmp4          ; add x to ptr1
+                  clc
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  lda tmp5
+                  beq @fast   
+                  jmp @complex                
+
+                  ; Fast case
+@fast:            
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+@fast_stripe:
+                  ldx #0
+                  lda tmp7
+                  bne @fast_byte_flip
+
+@fast_byte:
+                  lda (ptr1), y
+                  ora (ptr2), y
+                  sta (ptr1), y
+                  dey
+                  bne @fast_byte
+                  lda (ptr1), y      ; Last byte
+                  ora (ptr2), y
+                  sta (ptr1), y
+                  jmp @fast_next_stripe
+@fast_byte_flip:
+                  tya
+                  pha
+                  txa                  
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp8
+                  pla
+                  tay
+                  lda (ptr1), y
+                  ora tmp8
+                  sta (ptr1), y  
+                  dey                
+                  bne @fast_byte_flip
+                  txa               ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp8
+                  ldy #0
+                  lda (ptr1), y
+                  ora tmp8
+                  sta (ptr1), y
+
+@fast_next_stripe:
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done_fast    ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  bcc @skip_carry_1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  clc
+@skip_carry_1:
+                  lda tmp2
+                  adc ptr2
+                  sta ptr2
+                  bcc @skip_carry_2
+                  lda #0
+                  adc ptr2+1
+                  sta ptr2+1
+@skip_carry_2:
+
+                  ldy tmp2
+                  dey
+
+                  jmp @fast_stripe
+
+@done_fast:       jmp @done
+
+@complex:          
+                  sec
+                  lda #8
+                  sbc tmp5
+                  sta tmp8          ; 8 - (y%8)
+
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+
+
+@complex_stripe:
+
+                  clc               ; Store next row in ptr3
+                  lda #128
+                  adc ptr1
+                  sta ptr3
+                  lda #0
+                  adc ptr1+1
+                  sta ptr3+1
+
+                  ldx #0
+                  lda tmp7
+                  bne @complex_byte_flip  
+
+@complex_byte:                  
+                  lda (ptr2), y     ; shift << into current row
+                  ldx tmp5
+@next_asl:        asl
+                  dex
+                  bne @next_asl
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y     ; shift >> into next row
+                  ldx tmp8
+@next_lsr:        lsr
+                  dex
+                  bne @next_lsr
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  dey
+                  bne @complex_byte
+
+                  lda (ptr2), y     ; Last byte
+                  ldx tmp5
+@next_asl_last:   asl
+                  dex
+                  bne @next_asl_last
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y
+                  ldx tmp8
+@next_lsr_last:   lsr
+                  dex
+                  bne @next_lsr_last
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+
+@complex_byte_flip:
+                  tya
+                  pha
+                  txa
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp3         ; Reuse tmp3, y not needed anymore
+                  pla
+                  tay
+
+                  txa
+                  pha
+                  lda tmp3
+                  ldx tmp5
+@next_asl_flip:   asl
+                  dex
+                  bne @next_asl_flip
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip:   lsr
+                  dex
+                  bne @next_lsr_flip
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  pla
+                  tax
+                  dey
+                  bne @complex_byte_flip
+                  
+                  txa            ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp3
+
+                  ldy #0
+                  ldx tmp5
+@next_asl_flip_last:
+                  asl
+                  dex
+                  bne @next_asl_flip_last
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip_last:
+                  lsr
+                  dex
+                  bne @next_lsr_flip_last
+                  ora (ptr3), y
+                  sta (ptr3), y
+
+@complex_next_stripe:
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done         ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+                  clc
+                  lda tmp2
+                  adc ptr2
+                  sta ptr2
+                  lda #0
+                  adc ptr2+1
+                  sta ptr2+1
+
+                  ldy tmp2
+                  dey
+
+                  jmp @complex_stripe       
+@done:
+                  rts
+
+; multiply 8-bit number in a and store results in a/x as 16-bit
+multiply_128:
+                  ldy tmp1    ; cache tmp1 in y
+                  ldx #0      ; store 0 in tmp1, a already populated
+                  stx tmp1
+                  asl a       ; 2
+                  rol tmp1
+                  asl a       ; 4
+                  rol tmp1
+                  asl a       ; 8
+                  rol tmp1
+                  asl a       ; 16
+                  rol tmp1
+                  asl a       ; 32
+                  rol tmp1
+                  asl a       ; 64
+                  rol tmp1
+                  asl a       ; 128
+                  rol tmp1
+                  ldx tmp1            
+                  sty tmp1
+                  clc
+                  rts
+
+; void drawLine(unsigned char x0, unsigned char y0, unsigned char x1, unsigned char y1, unsigned char c) {
+draw_line:
+                  ldy #0
+
+                  jsr tramp_popa
+                  sta tmp5          ; c
+                  jsr tramp_popa
+                  sta tmp4          ; y1
+                  jsr tramp_popa
+                  sta tmp3          ; x1
+                  jsr tramp_popa
+                  sta tmp2          ; y0
+                  jsr tramp_popa
+                  sta tmp1          ; x0
+
+                  lda #<shift_table       ; Will be used inside of set_pixel
+                  sta ptr2
+                  lda #>shift_table
+                  sta ptr2+1
+
+                  ; unsigned char steep = abs((signed char)y1-(signed char)y0) > abs((signed char)x1-(signed char)x0);
+                  lda tmp4
+                  sec
+                  sbc tmp2
+                  jsr abs
+                  sta tmp6
+
+                  lda tmp3
+                  sec
+                  sbc tmp1
+                  jsr abs
+                  sta tmp7
+
+                  cmp tmp6
+                  bcs @noswap
+
+                  ldy #1            ; store steep in y
+
+                  ; if steep swap  x0, y0 and x1, y1
+                  lda tmp1
+                  ldx tmp2
+                  sta tmp2
+                  stx tmp1
+
+                  lda tmp3
+                  ldx tmp4
+                  sta tmp4
+                  stx tmp3
+@noswap:
+                  ; if x0 > x1 swap x0, x1 and y0, y1
+                  lda tmp3
+                  cmp tmp1
+                  bcs @right
+
+                  lda tmp1
+                  ldx tmp3
+                  sta tmp3
+                  stx tmp1
+
+                  lda tmp2
+                  ldx tmp4
+                  sta tmp4
+                  stx tmp2
+
+@right:
+
+                  ; dx = x1-x0;
+                  ; dy = (unsigned char)abs((signed char)y1-(signed char)y0);
+
+                  lda tmp3
+                  sec
+                  sbc tmp1
+                  sta tmp6    ; dx = tmp6
+
+                  lda tmp4
+                  sec
+                  sbc tmp2
+                  jsr abs
+                  sta tmp7    ; dy = tmp7
+
+                  ; err = dx/2;
+
+                  lda tmp6
+                  lsr
+                  sta tmp8    ; err = tmp8
+
+                  ;if (y0 < y1) {
+                  ;      ystep = 1;
+                  ;} else {
+                  ;      ystep = -1;
+                  ;}
+
+                  lda tmp2
+                  cmp tmp4
+                  bcs @neg
+                  lda #1
+                  sta tmp4    ; ystep = tmp4 = 1 (at this point y1 no longer needed so reuse tmp4)
+                  jmp @next
+@neg:
+                  lda #$ff    ; ystep = tmp4 = -1
+                  sta tmp4            
+@next:
+                  tya
+                  bne @steep
+
+                  lda tmp1    ; switch x/y for shallow case
+                  ldx tmp2
+                  sta tmp2
+                  stx tmp1
+
+@shallow:
+                  ;for (; x0<=x1; ++x0) {
+                  ;      SET_PIXEL(x0, y0, c);
+
+                  ;      err -= dy;
+                  ;      if (err < 0) {
+                  ;            y0 += ystep;
+                  ;            err += dx;
+                  ;      }
+                  ;}
+
+                  lda tmp3
+                  cmp tmp2
+                  bcc @done
+
+                  ; Save tmp3 (already in a), and tmp4 because they will be modified by set pixel
+                  pha
+                  lda tmp4
+                  pha
+
+                  jsr set_pixel_noargs    ; x0, y0 and c are already in correct memory locations for set_pixel
+
+                  pla
+                  sta tmp4
+                  pla
+                  sta tmp3
+
+                  lda tmp8
+                  sec
+                  sbc tmp7
+                  bmi @errneg_shallow
+
+                  sta tmp8
+                  inc tmp2
+                  bne @shallow ; Simulated branch always
+
+@errneg_shallow:
+                  clc
+                  adc tmp6
+                  sta tmp8
+
+                  clc
+                  lda tmp1
+                  adc tmp4
+                  sta tmp1
+
+                  inc tmp2
+                  bne @shallow ; Simulated branch always
+
+@steep:
+
+                  ;for (; x0<=x1; ++x0) {
+                  ;      SET_PIXEL(y0, x0, c);
+
+                  ;      err -= dy;
+                  ;      if (err < 0) {
+                  ;            y0 += ystep;
+                  ;            err += dx;
+                  ;      }
+                  ;}
+
+                  lda tmp3
+                  cmp tmp1
+                  bcc @done
+
+                  
+                  ; Save tmp3 (aready in a, and tmp4 because they will be modified by set pixel
+                  pha
+                  lda tmp4
+                  pha
+
+                  jsr set_pixel_noargs    ; x0, y0 and c are already in correct memory locations for set_pixel
+
+                  pla
+                  sta tmp4
+                  pla
+                  sta tmp3
+
+                  lda tmp8
+                  sec
+                  sbc tmp7
+                  bmi @errneg_steep
+
+                  sta tmp8
+                  inc tmp1
+                  bne @steep ; Simulated branch always
+
+@errneg_steep:
+                  clc
+                  adc tmp6
+                  sta tmp8
+
+                  clc
+                  lda tmp2
+                  adc tmp4
+                  sta tmp2
+
+                  inc tmp1
+                  bne @steep  ; Simulated branch always
+@done:
+                  rts
+
+; abs of a
+abs:
+                  and #$ff
+                  bpl @found
+                  eor #$ff
+                  clc
+                  adc #1  
+@found:
+                  rts
+                  
+
 ; Drawn from $3C00
-_display:              
+display:              
                   clc
                   clv   
                   lda #$00
-                  sta R0
+                  sta ptr1
                   lda #$3C
-                  sta R0 + 1
+                  sta ptr1 + 1
 
                   ldx #$0
                   ldy #$0
 
 @next_page_group: lda #SSD1305_SETPAGESTART  ; even pages (0, 2, 4, 6)
-                  stx R1
-                  adc R1
+                  stx ptr2
+                  adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
                   dc $00
                   dc $10
 
                   ; loop y < 128
-@byte_loop1:      lda (R0), y
+@byte_loop1:      lda (ptr1), y
                   sta SSD1305_DATA
                   iny
-                  sty R1
-                  lda #128
-                  bit R1
-                  beq @byte_loop1
+                  bpl @byte_loop1
+                  
                   ; odd pages (1, 3, 5, 7)
                   inx
                   lda #SSD1305_SETPAGESTART
-                  stx R1
-                  adc R1
+                  stx ptr2
+                  adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
                   dc $00
                   dc $10
                   ; loop y < 256
-@byte_loop2:      lda (R0), y
+@byte_loop2:      lda (ptr1), y
                   sta SSD1305_DATA
                   iny
                   bne @byte_loop2
-                  inc R0 + 1                ; update pointer to the next block of 256
+                  inc ptr1 + 1                ; update pointer to the next block of 256
                   inx
-                  stx R1
+                  stx ptr2
                   lda #8
-                  bit R1
+                  bit ptr2
                   beq @next_page_group
                   rts
+
+clear:
+                  clc
+                  clv
+                  lda #$00
+                  sta ptr1
+                  lda #$3C
+                  sta ptr1+1
+
+                  lda #$0
+                  ldx #$4
+                  ldy #$0
+
+@loop:            sta (ptr1), y
+                  iny
+                  bne @loop
+                  clc
+                  inc ptr1+1
+                  dex
+                  bne @loop
+                  rts
+
+
+
+page_mem_low:     .byte $00, $80, $00, $80, $00, $80, $00, $80
+page_mem_high:    .byte $3C, $3C, $3D, $3D, $3E, $3E, $3F, $3F
+
+shift_table:      .byte 1, 2, 4, 8, 16, 32, 64, 128
+
+dodo:           .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $c0, $60, $30, $30, $10, $10, $10, $30, $30, $60, $60, $c0, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $e0, $e0, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $80, $80, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $e0, $e0, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $80, $80, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $c0, $60, $60, $20, $30, $30, $30, $70, $d0, $30, $30, $20, $20, $78, $6e, $d7, $b1, $81, $c1, $c3, $ff, $38, $98, $08, $08, $08, $38, $f0, $00, $81, $ff, $3c, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $ff, $ff, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $7e, $7e, $81, $81, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $ff, $ff, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $7e, $7e, $81, $81, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $70, $fe, $07, $01, $00, $00, $00, $80, $80, $c0, $40, $40, $e3, $ff, $60, $20, $20, $20, $20, $30, $30, $18, $08, $03, $07, $0d, $19, $99, $8c, $cc, $f7, $d9, $4c, $47, $41, $40, $40, $60, $60, $60, $60, $60, $60, $40, $40, $40, $c0, $c0, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $07, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $07, $07, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $03, $0f, $1c, $38, $0e, $03, $03, $02, $06, $04, $06, $07, $04, $04, $04, $e4, $7e, $0e, $06, $03, $00, $00, $00, $00, $00, $01, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $03, $02, $0e, $1c, $f6, $c2, $02, $03, $03, $83, $c3, $e2, $a2, $26, $3c, $38, $60, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $f0, $08, $04, $e4, $54, $e4, $04, $08, $f0, $00, $00, $f0, $50, $20, $00, $f0, $00, $00, $00, $e0, $50, $e0, $00, $70, $c0, $70, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $ff, $e0, $00, $00, $00, $00, $00, $00, $00, $f8, $fc, $07, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $03, $86, $cc, $48, $78, $30, $10, $00, $00, $00, $00, $00, $ff, $d0, $c0, $60, $31, $1c, $06, $03, $03, $06, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $81, $42, $24, $a5, $a4, $25, $24, $42, $81, $00, $00, $81, $80, $80, $00, $81, $01, $01, $00, $01, $80, $01, $00, $80, $81, $80, $00, $80, $00, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $1e, $38, $60, $c0, $80, $00, $00, $00, $03, $06, $0c, $08, $18, $18, $10, $10, $10, $10, $18, $18, $08, $0c, $0c, $06, $02, $03, $01, $00, $00, $00, $00, $80, $c0, $e0, $70, $18, $0e, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0f, $10, $20, $2f, $2a, $25, $20, $10, $0f, $00, $00, $0f, $02, $00, $00, $0f, $08, $08, $00, $0f, $02, $0f, $00, $0b, $0a, $0e, $00, $0f, $02, $0f, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $03, $fe, $fe, $04, $0c, $0c, $08, $18, $18, $18, $18, $18, $18, $f8, $f8, $18, $08, $08, $0c, $0c, $0c, $06, $06, $02, $03, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0c, $06, $02, $1f, $03, $06, $0c, $18, $00, $00, $00, $00, $00, $00, $18, $0c, $0f, $3e, $04, $04, $04, $0c, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $38, $44, $10, $28, $00, $44, $38, $00, $00, $7c, $14, $08, $00, $7c, $54, $44, $00, $04, $7c, $04, $00, $7c, $54, $44, $00, $7c, $14, $68, $00, $00, $00, $7c, $08, $10, $7c, $00, $38, $44, $38, $00, $1c, $70, $1c, $00, $7c, $54, $44, $00, $5c, $54, $74, $00, $40, $00, $00, $64, $54, $48, $00, $38, $44, $38, $00, $08, $7c, $00, $38, $54, $54, $20, $00, $00

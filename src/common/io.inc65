@@ -1,4 +1,14 @@
 .import io_init
 .import irq_reset
 .import serial_init
-.import serial_alive
+.import serial_copy
+.import led_on
+.import led_off
+.import wait
+.import load_music
+.import play_effect
+.import spi_enable
+.import spi_disable
+.import spi_write
+.import load_game
+.import flash_game

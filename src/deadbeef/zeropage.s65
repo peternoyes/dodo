@@ -2,7 +2,7 @@
 
                   .zeropage
 
-tramp_sp:		  .res 1
+reserved:		  .res 42
 sp:               .res 2
 sreg:             .res 2
 regsave:          .res 4
@@ -16,14 +16,3 @@ tmp3:             .res 1
 tmp4:             .res 1
 regbank:          .res 6
 tmpstack:         .res 1
-irq_status:		  .res 1
-music_mem:		  .res 2
-music_index: 	  .res 1
-music_dec:		  .res 1
-effect_mem:		  .res 2
-effect_index:	  .res 1
-effect_dec:	      .res 1
-tmp5:			  .res 1
-tmp6:			  .res 1
-tmp7:			  .res 1
-tmp8:			  .res 1

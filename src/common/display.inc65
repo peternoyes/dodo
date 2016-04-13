@@ -1,2 +1,7 @@
 .import ssd1305_init
-.import _display
+.import display
+.import draw_sprite
+.import clear_sprite
+.import set_pixel
+.import draw_line
+.import clear
