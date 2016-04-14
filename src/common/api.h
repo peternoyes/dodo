@@ -11,7 +11,11 @@
 #define SPI_WRIT  0x02
 #define SPI_RDID  0x9F
 
-#define DRAW_SPRITE(sprite, x, y, w, h, f) draw_sprite_proto(sprite, x, y, w, h, f, 0)
+#define DRAW_NOP 0x0
+#define DRAW_OR  0x1
+#define DRAW_AND 0x2
+
+#define DRAW_SPRITE(sprite, x, y, w, h, f, m) draw_sprite_proto(sprite, x, y, w, h, f, m, 0)
 #define DISPLAY() display_proto(1)
 #define CLEAR_SPRITE(x, y, w, h) clear_sprite_proto(x, y, w, h, 2)
 #define SET_PIXEL(x, y, c) set_pixel_proto(x, y, c, 3)
@@ -27,7 +31,7 @@
 #define SPI_WRITE(v) spi_write_proto(v, 13)
 #define CLEAR() clear_proto(14)
 
-static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte);
+static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
 static void (*clear_sprite_proto)(byte, byte, byte, byte, byte);
 static void (*set_pixel_proto)(byte, byte, byte, byte);
@@ -54,7 +58,7 @@ void api_init() {
 	__A__ = (byte)sp_ptr;
 	asm("sta $0");
 
-	draw_sprite_proto = (void (*)(byte*, byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
+	draw_sprite_proto = (void (*)(byte*, byte, byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
 	display_proto = (void (*)(byte))(*(int*)0xFFF8);
 	clear_sprite_proto = (void (*)(byte, byte, byte, byte, byte))(*(int*)0xFFF8);
 	set_pixel_proto = (void (*)(byte, byte, byte, byte))(*(int*)0xFFF8);

@@ -259,6 +259,8 @@ clear_sprite:
 ; drawing to #3C00
 ; void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
 draw_sprite:         
+                  jsr tramp_popa    ; mode
+                  sta tmp9
                   jsr tramp_popa         
                   sta tmp7          ; flip
                   jsr tramp_popa  
@@ -300,6 +302,7 @@ draw_sprite:
                   beq @fast   
                   jmp @complex                
 
+                  clc               ; Clear carry so we can use bcc as branch always below
                   ; Fast case
 @fast:            
                   ldy tmp2          ; Load width into y, will decrement to 0     
@@ -308,18 +311,69 @@ draw_sprite:
                   ldx #0
                   lda tmp7
                   bne @fast_byte_flip
-
 @fast_byte:
+                  lda tmp9
+                  bne @fast_byte_t2
+@fast_byte_nop:
+                  lda (ptr2), y
+                  sta (ptr1), y
+                  dey
+                  bne @fast_byte_nop
+                  lda (ptr2), y      ; Last byte
+                  sta (ptr1), y
+                  ;bcc @fast_next_stripe   ; Branch always (instead of jmp)
+                  jmp @fast_next_stripe
+@fast_byte_t2:    
+                  and #$1
+                  beq @fast_byte_and
+@fast_byte_or:
                   lda (ptr1), y
                   ora (ptr2), y
                   sta (ptr1), y
                   dey
-                  bne @fast_byte
+                  bne @fast_byte_or
                   lda (ptr1), y      ; Last byte
                   ora (ptr2), y
                   sta (ptr1), y
-                  jmp @fast_next_stripe
+                  bcc @fast_next_stripe   ; Branch always (instead of jmp)   
+@fast_byte_and:
+                  lda (ptr1), y
+                  and (ptr2), y
+                  sta (ptr1), y
+                  dey
+                  bne @fast_byte_and
+                  lda (ptr1), y      ; Last byte
+                  and (ptr2), y
+                  sta (ptr1), y
+                  bcc @fast_next_stripe   ; Branch always (instead of jmp)              
+
 @fast_byte_flip:
+                  lda tmp9
+                  bne @fast_byte_flip_t2
+@fast_byte_flip_nop:
+                  tya
+                  pha
+                  txa                  
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp8
+                  pla
+                  tay
+                  lda tmp8
+                  sta (ptr1), y  
+                  dey                
+                  bne @fast_byte_flip_nop
+                  txa               ; Last byte
+                  tay
+                  lda (ptr2), y
+                  ldy #0
+                  sta (ptr1), y
+                  jmp @fast_next_stripe
+@fast_byte_flip_t2:
+                  and #$1
+                  beq @fast_byte_flip_and
+@fast_byte_flip_or:
                   tya
                   pha
                   txa                  
@@ -333,7 +387,7 @@ draw_sprite:
                   ora tmp8
                   sta (ptr1), y  
                   dey                
-                  bne @fast_byte_flip
+                  bne @fast_byte_flip_nop
                   txa               ; Last byte
                   tay
                   lda (ptr2), y
@@ -342,7 +396,30 @@ draw_sprite:
                   lda (ptr1), y
                   ora tmp8
                   sta (ptr1), y
-
+                  jmp @fast_next_stripe
+@fast_byte_flip_and:
+                  tya
+                  pha
+                  txa                  
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp8
+                  pla
+                  tay
+                  lda (ptr1), y
+                  and tmp8
+                  sta (ptr1), y  
+                  dey                
+                  bne @fast_byte_flip_nop
+                  txa               ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp8
+                  ldy #0
+                  lda (ptr1), y
+                  and tmp8
+                  sta (ptr1), y
 @fast_next_stripe:
                   lda tmp1  
                   sec                
@@ -399,45 +476,234 @@ draw_sprite:
 
                   ldx #0
                   lda tmp7
-                  bne @complex_byte_flip  
+                  beq @complex_byte
+                  jmp @complex_byte_flip
 
-@complex_byte:                  
+@complex_byte: 
+                  lda tmp9
+                  bne @complex_byte_t2
+
+@complex_byte_nop:        
+                  ldx tmp5
+                  lda mask_table, x
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y     ; shift << into current row
+@next_asl_nop:    asl
+                  dex
+                  bne @next_asl_nop
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  ldx tmp8
+                  lda mask_table_inv, x
+                  and (ptr3), y
+                  sta (ptr3), y
+
+                  lda (ptr2), y     ; shift >> into next row
+@next_lsr_nop:    lsr
+                  dex
+                  bne @next_lsr_nop
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  dey
+                  bne @complex_byte_nop
+
+                  ldx tmp5
+                  lda mask_table, x
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y     ; Last byte
+@next_asl_last_nop:   
+                  asl
+                  dex
+                  bne @next_asl_last_nop
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  ldx tmp8
+                  lda mask_table_inv, x
+                  and (ptr3), y
+                  sta (ptr3), y
+
+                  lda (ptr2), y
+@next_lsr_last_nop:
+                  lsr
+                  dex
+                  bne @next_lsr_last_nop
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+@complex_byte_t2:
+                  and #$1
+                  beq @complex_byte_and
+@complex_byte_or:
                   lda (ptr2), y     ; shift << into current row
                   ldx tmp5
-@next_asl:        asl
+@next_asl_or:     asl
                   dex
-                  bne @next_asl
+                  bne @next_asl_or
                   ora (ptr1), y
                   sta (ptr1), y
 
                   lda (ptr2), y     ; shift >> into next row
                   ldx tmp8
-@next_lsr:        lsr
+@next_lsr_or:     lsr
                   dex
-                  bne @next_lsr
+                  bne @next_lsr_or
                   ora (ptr3), y
                   sta (ptr3), y
                   dey
-                  bne @complex_byte
+                  bne @complex_byte_or
 
                   lda (ptr2), y     ; Last byte
                   ldx tmp5
-@next_asl_last:   asl
+@next_asl_last_or:   
+                  asl
                   dex
-                  bne @next_asl_last
+                  bne @next_asl_last_or
                   ora (ptr1), y
                   sta (ptr1), y
 
                   lda (ptr2), y
                   ldx tmp8
-@next_lsr_last:   lsr
+@next_lsr_last_or:  
+                  lsr
                   dex
-                  bne @next_lsr_last
+                  bne @next_lsr_last_or
                   ora (ptr3), y
                   sta (ptr3), y
                   jmp @complex_next_stripe
+@complex_byte_and:
+                  lda (ptr2), y     ; shift << into current row
+                  ldx tmp5
+@next_asl_and:    
+                  sec
+                  rol
+                  dex
+                  bne @next_asl_and
+                  and (ptr1), y
+                  sta (ptr1), y
 
-@complex_byte_flip:
+                  lda (ptr2), y     ; shift >> into next row
+                  ldx tmp8
+@next_lsr_and:    
+                  sec
+                  ror
+                  dex
+                  bne @next_lsr_and
+                  and (ptr3), y
+                  sta (ptr3), y
+                  dey
+                  bne @complex_byte_and
+
+                  lda (ptr2), y     ; Last byte
+                  ldx tmp5
+@next_asl_last_and: 
+                  sec
+                  rol
+                  dex
+                  bne @next_asl_last_and
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y
+                  ldx tmp8
+@next_lsr_last_and:  
+                  sec 
+                  ror
+                  dex
+                  bne @next_lsr_last_and
+                  and (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+
+@complex_byte_flip: 
+                  lda tmp9
+                  bne @complex_byte_flip_t2
+@complex_byte_flip_nop:
+                  tya
+                  pha
+                  txa
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp3         ; Reuse tmp3, y not needed anymore
+                  pla
+                  tay
+
+                  txa
+                  pha
+                  
+                  ldx tmp5
+                  lda mask_table, x
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+@next_asl_flip_nop:   
+                  asl
+                  dex
+                  bne @next_asl_flip_nop
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  ldx tmp8
+                  lda mask_table_inv, x
+                  and (ptr3), y
+                  sta (ptr3), y
+
+                  lda tmp3
+@next_lsr_flip_nop:   
+                  lsr
+                  dex
+                  bne @next_lsr_flip_nop
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  pla
+                  tax
+                  dey
+                  bne @complex_byte_flip_nop
+                  
+                  txa            ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp3
+
+                  ldy #0
+
+                  ldx tmp5
+                  lda mask_table, x
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+@next_asl_flip_last_nop:
+                  asl
+                  dex
+                  bne @next_asl_flip_last_nop
+                  ora (ptr1), y
+                  sta (ptr1), y
+
+                  ldx tmp8
+                  lda mask_table_inv, x
+                  and (ptr3), y
+                  sta (ptr3), y
+
+                  lda tmp3
+@next_lsr_flip_last_nop:
+                  lsr
+                  dex
+                  bne @next_lsr_flip_last_nop
+                  ora (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+@complex_byte_flip_t2:
+                  and #$1
+                  beq @complex_byte_flip_and
+@complex_byte_flip_or:
                   tya
                   pha
                   txa
@@ -452,23 +718,25 @@ draw_sprite:
                   pha
                   lda tmp3
                   ldx tmp5
-@next_asl_flip:   asl
+@next_asl_flip_or:
+                  asl
                   dex
-                  bne @next_asl_flip
+                  bne @next_asl_flip_or
                   ora (ptr1), y
                   sta (ptr1), y
 
                   lda tmp3
                   ldx tmp8
-@next_lsr_flip:   lsr
+@next_lsr_flip_or:   
+                  lsr
                   dex
-                  bne @next_lsr_flip
+                  bne @next_lsr_flip_or
                   ora (ptr3), y
                   sta (ptr3), y
                   pla
                   tax
                   dey
-                  bne @complex_byte_flip
+                  bne @complex_byte_flip_or
                   
                   txa            ; Last byte
                   tay
@@ -477,20 +745,83 @@ draw_sprite:
 
                   ldy #0
                   ldx tmp5
-@next_asl_flip_last:
+@next_asl_flip_last_or:
                   asl
                   dex
-                  bne @next_asl_flip_last
+                  bne @next_asl_flip_last_or
                   ora (ptr1), y
                   sta (ptr1), y
 
                   lda tmp3
                   ldx tmp8
-@next_lsr_flip_last:
+@next_lsr_flip_last_or:
                   lsr
                   dex
-                  bne @next_lsr_flip_last
+                  bne @next_lsr_flip_last_or
                   ora (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+                  
+@complex_byte_flip_and:
+                  tya
+                  pha
+                  txa
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp3         ; Reuse tmp3, y not needed anymore
+                  pla
+                  tay
+
+                  txa
+                  pha
+                  lda tmp3
+                  ldx tmp5
+@next_asl_flip_and:   
+                  sec
+                  rol
+                  dex
+                  bne @next_asl_flip_and
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip_and:   
+                  sec
+                  ror
+                  dex
+                  bne @next_lsr_flip_and
+                  and (ptr3), y
+                  sta (ptr3), y
+                  pla
+                  tax
+                  dey
+                  bne @complex_byte_flip_and
+                  
+                  txa            ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp3
+
+                  ldy #0
+                  ldx tmp5
+@next_asl_flip_last_and:
+                  sec
+                  rol
+                  dex
+                  bne @next_asl_flip_last_and
+                  and (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip_last_and:
+                  sec
+                  ror
+                  dex
+                  bne @next_lsr_flip_last_and
+                  and (ptr3), y
                   sta (ptr3), y
 
 @complex_next_stripe:
@@ -843,5 +1174,9 @@ page_mem_low:     .byte $00, $80, $00, $80, $00, $80, $00, $80
 page_mem_high:    .byte $3C, $3C, $3D, $3D, $3E, $3E, $3F, $3F
 
 shift_table:      .byte 1, 2, 4, 8, 16, 32, 64, 128
+
+mask_table:       .byte $00, $01, $03, $07, $0F, $1F, $3F, $7F
+mask_table_inv:   .byte $00, $80, $C0, $E0, $F0, $F8, $FC, $FE
+
 
 dodo:           .byte $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $c0, $60, $30, $30, $10, $10, $10, $30, $30, $60, $60, $c0, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $e0, $e0, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $80, $80, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $e0, $e0, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $80, $80, $60, $60, $60, $60, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $80, $c0, $60, $60, $20, $30, $30, $30, $70, $d0, $30, $30, $20, $20, $78, $6e, $d7, $b1, $81, $c1, $c3, $ff, $38, $98, $08, $08, $08, $38, $f0, $00, $81, $ff, $3c, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $ff, $ff, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $7e, $7e, $81, $81, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $ff, $ff, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $7e, $7e, $81, $81, $00, $00, $00, $00, $81, $81, $7e, $7e, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $70, $fe, $07, $01, $00, $00, $00, $80, $80, $c0, $40, $40, $e3, $ff, $60, $20, $20, $20, $20, $30, $30, $18, $08, $03, $07, $0d, $19, $99, $8c, $cc, $f7, $d9, $4c, $47, $41, $40, $40, $60, $60, $60, $60, $60, $60, $40, $40, $40, $c0, $c0, $80, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $07, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $07, $07, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $01, $01, $06, $06, $06, $06, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $03, $0f, $1c, $38, $0e, $03, $03, $02, $06, $04, $06, $07, $04, $04, $04, $e4, $7e, $0e, $06, $03, $00, $00, $00, $00, $00, $01, $01, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $03, $02, $0e, $1c, $f6, $c2, $02, $03, $03, $83, $c3, $e2, $a2, $26, $3c, $38, $60, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $f0, $08, $04, $e4, $54, $e4, $04, $08, $f0, $00, $00, $f0, $50, $20, $00, $f0, $00, $00, $00, $e0, $50, $e0, $00, $70, $c0, $70, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $ff, $e0, $00, $00, $00, $00, $00, $00, $00, $f8, $fc, $07, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $03, $86, $cc, $48, $78, $30, $10, $00, $00, $00, $00, $00, $ff, $d0, $c0, $60, $31, $1c, $06, $03, $03, $06, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $81, $42, $24, $a5, $a4, $25, $24, $42, $81, $00, $00, $81, $80, $80, $00, $81, $01, $01, $00, $01, $80, $01, $00, $80, $81, $80, $00, $80, $00, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $1e, $38, $60, $c0, $80, $00, $00, $00, $03, $06, $0c, $08, $18, $18, $10, $10, $10, $10, $18, $18, $08, $0c, $0c, $06, $02, $03, $01, $00, $00, $00, $00, $80, $c0, $e0, $70, $18, $0e, $03, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0f, $10, $20, $2f, $2a, $25, $20, $10, $0f, $00, $00, $0f, $02, $00, $00, $0f, $08, $08, $00, $0f, $02, $0f, $00, $0b, $0a, $0e, $00, $0f, $02, $0f, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $01, $03, $fe, $fe, $04, $0c, $0c, $08, $18, $18, $18, $18, $18, $18, $f8, $f8, $18, $08, $08, $0c, $0c, $0c, $06, $06, $02, $03, $01, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0c, $06, $02, $1f, $03, $06, $0c, $18, $00, $00, $00, $00, $00, $00, $18, $0c, $0f, $3e, $04, $04, $04, $0c, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $38, $44, $10, $28, $00, $44, $38, $00, $00, $7c, $14, $08, $00, $7c, $54, $44, $00, $04, $7c, $04, $00, $7c, $54, $44, $00, $7c, $14, $68, $00, $00, $00, $7c, $08, $10, $7c, $00, $38, $44, $38, $00, $1c, $70, $1c, $00, $7c, $54, $44, $00, $5c, $54, $74, $00, $40, $00, $00, $64, $54, $48, $00, $38, $44, $38, $00, $08, $7c, $00, $38, $54, $54, $20, $00, $00

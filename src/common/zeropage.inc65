@@ -1,13 +1,13 @@
 .globalzp tramp_sp
-.globalzp sp
-.globalzp sreg
-.globalzp regsave
-.globalzp regbank
+;.globalzp sp
+;.globalzp sreg
+;.globalzp regsave
+;.globalzp regbank
 .globalzp tmp1
 .globalzp tmp2
 .globalzp tmp3
 .globalzp tmp4
-.globalzp tmpstack
+;.globalzp tmpstack
 .globalzp ptr1
 .globalzp ptr2
 .globalzp ptr3
@@ -23,3 +23,4 @@
 .globalzp tmp6
 .globalzp tmp7
 .globalzp tmp8
+.globalzp tmp9

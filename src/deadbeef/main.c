@@ -102,25 +102,25 @@ int main() {
 	LOAD_MUSIC((unsigned char*)_music);
 
 	drawPlayfield();
-	DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0);
-	DRAW_SPRITE(numbers + (_lives * 8), 0, 0, 8, 8, 0);
+	DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0, DRAW_NOP);
+	DRAW_SPRITE(numbers + (_lives * 8), 0, 0, 8, 8, 0, DRAW_NOP);
 
 	for (;;) {
 		++frameCount;
 
 		if (_lives == 0) {
-			DRAW_SPRITE(game_over, 44, 28, 40, 8, 0);
+			DRAW_SPRITE(game_over, 44, 28, 40, 8, 0, DRAW_NOP);
 			DISPLAY();
 			break;
 		}
 
-		DRAW_SPRITE(saucer, _saucer_x, _saucer_y, 16, 8, 0);
+		DRAW_SPRITE(saucer, _saucer_x, _saucer_y, 16, 8, 0, DRAW_NOP);
 		if (_cowState != REGENERATING) {
-			DRAW_SPRITE(cow[cowAnimation], _cow_x, _cow_y, 24, 16, cowDir);
+			DRAW_SPRITE(cow[cowAnimation], _cow_x, _cow_y, 24, 16, cowDir, DRAW_NOP);
 		}
 		
 		if (_fart_active) {
-			DRAW_SPRITE(fart_sprite, _fart_x, _fart_y, 8, 8, 0);
+			DRAW_SPRITE(fart_sprite, _fart_x, _fart_y, 8, 8, 0, DRAW_OR);
 		}
 		
 
@@ -148,7 +148,7 @@ int main() {
 						_fart_active = 0;
 						--_lives;
 						CLEAR_SPRITE(0, 0, 8, 8);
-						DRAW_SPRITE(numbers + (_lives * 8), 0, 0, 8, 8, 0);						
+						DRAW_SPRITE(numbers + (_lives * 8), 0, 0, 8, 8, 0, DRAW_NOP);						
 					}			
 				}
 
@@ -192,7 +192,7 @@ int main() {
 				_cow_y = 8;
 				++_score;
 				CLEAR_SPRITE(120, 0, 8, 8);
-				DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0);
+				DRAW_SPRITE(numbers + (_score * 8), 120, 0, 8, 8, 0, DRAW_NOP);
 				_cowState = REGENERATING;			
 			}
 		} else if (_cowState == FALLING) {
