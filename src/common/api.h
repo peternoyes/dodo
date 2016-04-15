@@ -30,6 +30,7 @@
 #define SPI_DISABLE() spi_disable_proto(12)
 #define SPI_WRITE(v) spi_write_proto(v, 13)
 #define CLEAR() clear_proto(14)
+#define COPY_BACKGROUND(data, x, y, w, h, dir) copy_background_proto(data, x, y, w, h, dir, 15)
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -46,6 +47,7 @@ static void (*spi_enable_proto)(byte);
 static void (*spi_disable_proto)(byte);
 static byte (*spi_write_proto)(byte, byte);
 static void (*clear_proto)(byte);
+static void (*copy_background_proto)(byte*, byte, byte, byte, byte, byte, byte);
 
 
 static unsigned char get_sp() {
@@ -73,6 +75,7 @@ void api_init() {
 	spi_disable_proto = (void (*)(byte))(*(int*)0xFFF8);
 	spi_write_proto = (byte (*)(byte, byte))(*(int*)0xFFF8);
 	clear_proto = (void (*)(byte))(*(int*)0xFFF8);
+	copy_background_proto = (void (*)(byte*, byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
 }
 
 /*

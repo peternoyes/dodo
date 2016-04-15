@@ -46,7 +46,8 @@
                   .export set_pixel
                   .export clear_sprite  
                   .export draw_line    
-                  .export clear    
+                  .export clear   
+                  .export copy_background 
 
                   .macro dc cmd
                     lda #cmd
@@ -181,6 +182,109 @@ set_pixel_noargs:                   ; alternate entry point
                   sta (ptr1), y
                   rts       
 
+; void copyBackground(unsigned char* data, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char dir)
+copy_background:
+                  jsr tramp_popa
+                  sta tmp6          ; dir
+                  jsr tramp_popa
+                  sta tmp1          ; h
+                  jsr tramp_popa
+                  sta tmp2          ; w
+                  jsr tramp_popa
+                  sta tmp3          ; y
+                  jsr tramp_popa
+                  sta tmp4          ; x
+                  jsr tramp_popax
+                  sta ptr2
+                  stx ptr2+1        ; data
+
+                  lda tmp3
+                  lsr
+                  lsr
+                  lsr
+                  sta tmp5          ; Page
+
+                  lda tmp3
+                  and #$07
+                  beq @load
+
+                  clc               ; If y%8 != 0 then we need to copy an additional page
+                  lda tmp1
+                  adc #8
+                  sta tmp1
+
+@load:
+                  lda tmp5
+                  tax
+                  lda page_mem_low, x
+                  sta ptr1
+                  lda page_mem_high, x
+                  sta ptr1+1
+
+                  lda tmp4          ; add x to ptr1
+                  clc
+                  adc ptr1
+                  sta ptr1
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1                  
+
+                  ldy tmp2          ; Load width into y, will decrement to 0     
+                  dey               ; start at w - 1
+
+@start:
+                  lda tmp6
+                  bne @next_in
+@next_out:        lda (ptr1), y
+                  sta (ptr2), y
+                  dey
+                  bne @next_out
+                  lda (ptr1), y
+                  sta (ptr2), y
+                  jmp @next_stripe
+
+@next_in:         lda (ptr2), y
+                  sta (ptr1), y
+                  dey
+                  bne @next_in
+                  lda (ptr2), y
+                  sta (ptr1), y
+
+@next_stripe:
+                  lda tmp1  
+                  sec                
+                  sbc #8
+                  beq @done         ; If h now down to 0, done
+                  sta tmp1
+
+                  clc
+                  lda #128          ; Load up next stripe
+                  adc ptr1
+                  sta ptr1
+                  bcc @skip_carry
+                  lda #0
+                  adc ptr1+1
+                  sta ptr1+1
+
+@skip_carry:
+                  clc
+                  lda tmp2
+                  adc ptr2
+                  sta ptr2
+                  bcc @skip_carry2
+                  lda #0
+                  adc ptr2+1
+                  sta ptr2+1
+@skip_carry2:
+
+                  ldy tmp2
+                  dey
+
+                  jmp @start
+@done:
+                  rts                    
+
+
 ; void clearSprite(unsigned char x, unsigned char y, unsigned char w, unsigned char h)
 clear_sprite:
                   jsr tramp_popa
@@ -202,7 +306,7 @@ clear_sprite:
                   and #$07
                   beq @load
 
-                  clc
+                  clc               ; If y%8 != 0 then we need to copy an additional page
                   lda tmp1
                   adc #8
                   sta tmp1

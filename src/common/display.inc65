@@ -5,3 +5,4 @@
 .import set_pixel
 .import draw_line
 .import clear
+.import copy_background
