@@ -5,11 +5,19 @@
 
             	.export text_init
             	.export draw_string
+            	.export set_cursor
 
 text_init:
-				lda #1
+				lda #0
 				sta text_row
 				sta text_col
+				rts
+
+set_cursor:
+				jsr tramp_popa
+				sta text_col
+				jsr tramp_popa
+				sta text_row
 				rts
 
 
