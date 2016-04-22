@@ -3,9 +3,6 @@
                   .zeropage
 
 tramp_sp:		  .res 1
-;sp:               .res 2
-;sreg:             .res 2
-;regsave:          .res 4
 ptr1:             .res 2
 ptr2:             .res 2
 ptr3:             .res 2
@@ -14,8 +11,6 @@ tmp1:             .res 1
 tmp2:             .res 1
 tmp3:             .res 1
 tmp4:             .res 1
-;regbank:          .res 6
-;tmpstack:         .res 1
 irq_status:		  .res 1
 music_mem:		  .res 2
 music_index: 	  .res 1
@@ -28,3 +23,5 @@ tmp6:			  .res 1
 tmp7:			  .res 1
 tmp8:			  .res 1
 tmp9:			  .res 1
+text_row:		  .res 1
+text_col:		  .res 1

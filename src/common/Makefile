@@ -1,4 +1,4 @@
-ASM_SOURCES = entry.s65 zeropage.s65 display.s65 util.s65 io.s65 api.s65
+ASM_SOURCES = entry.s65 zeropage.s65 display.s65 util.s65 io.s65 api.s65 text.s65
 
 # Compilation of assembler files
 %.o: %.s65
