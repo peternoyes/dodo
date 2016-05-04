@@ -2,6 +2,7 @@
                 .include "display.inc65"
                 .include "util.inc65"
                 .include "io.inc65"
+                .include "text.inc65"
 
                 .setcpu "6502"
 
@@ -47,6 +48,7 @@ _init:
 
                 jsr ssd1305_init
                 jsr io_init
+                jsr text_init
 
 
 @wait_key:

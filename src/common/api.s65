@@ -2,6 +2,7 @@
 					.include "util.inc65"
 					.include "io.inc65"
 					.include "zeropage.inc65"
+					.include "text.inc65"
 
 					.setcpu "6502"
 
@@ -61,5 +62,5 @@ tramp_popax:
 					rts
 
 
-funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write, <clear, <copy_background
-funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write, >clear, >copy_background
+funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write, <clear, <copy_background, <draw_string, <set_cursor
+funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write, >clear, >copy_background, >draw_string, >set_cursor

@@ -31,6 +31,8 @@
 #define SPI_WRITE(v) spi_write_proto(v, 13)
 #define CLEAR() clear_proto(14)
 #define COPY_BACKGROUND(data, x, y, w, h, dir) copy_background_proto(data, x, y, w, h, dir, 15)
+#define DRAW_STRING(text) draw_string_proto(text, 16);
+#define SET_CURSOR(row, col) set_cursor_proto(row, col, 17);
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -48,6 +50,8 @@ static void (*spi_disable_proto)(byte);
 static byte (*spi_write_proto)(byte, byte);
 static void (*clear_proto)(byte);
 static void (*copy_background_proto)(byte*, byte, byte, byte, byte, byte, byte);
+static void (*draw_string_proto)(char*, byte);
+static void (*set_cursor_proto)(byte, byte, byte);
 
 
 static unsigned char get_sp() {
@@ -76,6 +80,8 @@ void api_init() {
 	spi_write_proto = (byte (*)(byte, byte))(*(int*)0xFFF8);
 	clear_proto = (void (*)(byte))(*(int*)0xFFF8);
 	copy_background_proto = (void (*)(byte*, byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
+	draw_string_proto = (void (*)(char*, byte))(*(int*)0xFFF8);
+	set_cursor_proto = (void (*)(byte, byte, byte))(*(int*)0xFFF8);
 }
 
 /*
