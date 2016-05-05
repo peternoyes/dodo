@@ -1221,7 +1221,7 @@ display:
                   stx ptr2
                   adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
-                  dc $00
+                  dc $02
                   dc $10
 
                   ; loop y < 128
@@ -1236,7 +1236,7 @@ display:
                   stx ptr2
                   adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
-                  dc $00
+                  dc $02
                   dc $10
                   ; loop y < 256
 @byte_loop2:      lda (ptr1), y

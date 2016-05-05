@@ -25,3 +25,4 @@ tmp8:			  .res 1
 tmp9:			  .res 1
 text_row:		  .res 1
 text_col:		  .res 1
+invert_buttons:	  .res 1

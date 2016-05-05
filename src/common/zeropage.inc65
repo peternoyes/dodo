@@ -21,3 +21,4 @@
 .globalzp tmp9
 .globalzp text_row
 .globalzp text_col
+.globalzp invert_buttons
