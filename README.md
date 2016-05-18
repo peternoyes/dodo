@@ -1,19 +1,24 @@
-# Dodo
+# Dodo: 6502 Portable Game System
 
-![Dodo Image](dodo.jpg)
+![Dodo Image](dodo.jpg) 
 
-Dodo is homebrew 6502 SBC computer. The name is inspired from the book DroidMaker where it is revealed that the first version Lucasfilm's EditDroid was also named Dodo. Like the first EditDroid, Dodo is extinct in its design.
+## Background
 
-While obviously not a practical computer in today's world, building Dodo is still a fun and challenging learning experience.
+Dodo is a 6502 based Portable Game System. This repository houses the system firmware, the hardware design, and a few games. Visit the [Dodo Homepage](http://www.dodo6502.com) for more background and status updates on the project. Detailed logs are posted on [Hackaday](https://hackaday.io/project/9325-dodo-6502-game-system).
 
-## Goals
-- Create a handheld gaming machine
-- Utilize the 65XX series of chips where possible
-- Use a Bitmap'd display
-- Gamepad
-- 3D Print an enclosure
+## Software
 
-## Links
-This project would not be possible without others having documented their 6502 projects online. The following two resources have been invaluable in learning how to build a 6502 computer.
-- http://wilsonminesco.com/6502primer/potpourri.html
-- http://www.grappendorf.net/projects/6502-home-computer
+The Dodo software is all built using [cc65](https://github.com/cc65/cc65). The system firmware is written in assembly and exposes an API that is callable from C. Games are intended to be written in C, and the API is exposed through api.h. See the dodo-sample for more information on game development.
+
+## Hardware
+
+The hardware is designed in Diptrace and is undergoing major revisions. See the Dodo Homepage for more updates.
+
+## Other Repositories
+
+- [gododo](https://github.com/peternoyes/gododo): Tool written in Go
+	- Simulator, Outputs to either Console or as a Webpage
+	- Flashes games to the FRAM cartridge
+- [dodo-sample](https://github.com/peternoyes/dodo-sample) - Sample project
+
+
