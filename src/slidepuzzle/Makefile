@@ -13,7 +13,7 @@ ASM_SOURCES = crt0.s65 zeropage.s65
 all: fram.bin
 
 fram.bin: $(ASM_SOURCES:.s65=.o) $(C_SOURCES:.c=.o)
-	cl65 -C fram.cfg -m deadbeef.map -o $@ $^ ../common/dodo.lib
+	cl65 -C fram.cfg -m fram.map -o $@ $^ ../common/dodo.lib
 
 clean:
 	rm -f fram.bin *.s *.o *.lst *.map

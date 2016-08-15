@@ -425,9 +425,10 @@ draw_sprite:
                   bne @fast_byte_nop
                   lda (ptr2), y      ; Last byte
                   sta (ptr1), y
-                  ;bcc @fast_next_stripe   ; Branch always (instead of jmp)
                   jmp @fast_next_stripe
 @fast_byte_t2:    
+                  and #$3
+                  beq @fast_byte_xor
                   and #$1
                   beq @fast_byte_and
 @fast_byte_or:
@@ -439,7 +440,7 @@ draw_sprite:
                   lda (ptr1), y      ; Last byte
                   ora (ptr2), y
                   sta (ptr1), y
-                  bcc @fast_next_stripe   ; Branch always (instead of jmp)   
+                  jmp @fast_next_stripe 
 @fast_byte_and:
                   lda (ptr1), y
                   and (ptr2), y
@@ -449,8 +450,17 @@ draw_sprite:
                   lda (ptr1), y      ; Last byte
                   and (ptr2), y
                   sta (ptr1), y
-                  bcc @fast_next_stripe   ; Branch always (instead of jmp)              
-
+                  jmp @fast_next_stripe 
+@fast_byte_xor:              
+                  lda (ptr1), y
+                  eor (ptr2), y
+                  sta (ptr1), y
+                  dey
+                  bne @fast_byte_xor
+                  lda (ptr1), y      ; Last byte
+                  eor (ptr2), y
+                  sta (ptr1), y
+                  jmp @fast_next_stripe 
 @fast_byte_flip:
                   lda tmp9
                   bne @fast_byte_flip_t2
@@ -475,6 +485,8 @@ draw_sprite:
                   sta (ptr1), y
                   jmp @fast_next_stripe
 @fast_byte_flip_t2:
+                  and #$3
+                  beq @fast_byte_flip_xor
                   and #$1
                   beq @fast_byte_flip_and
 @fast_byte_flip_or:
@@ -491,7 +503,7 @@ draw_sprite:
                   ora tmp8
                   sta (ptr1), y  
                   dey                
-                  bne @fast_byte_flip_nop
+                  bne @fast_byte_flip_or
                   txa               ; Last byte
                   tay
                   lda (ptr2), y
@@ -515,7 +527,7 @@ draw_sprite:
                   and tmp8
                   sta (ptr1), y  
                   dey                
-                  bne @fast_byte_flip_nop
+                  bne @fast_byte_flip_and
                   txa               ; Last byte
                   tay
                   lda (ptr2), y
@@ -523,6 +535,30 @@ draw_sprite:
                   ldy #0
                   lda (ptr1), y
                   and tmp8
+                  sta (ptr1), y
+                  jmp @fast_next_stripe
+@fast_byte_flip_xor:
+                  tya
+                  pha
+                  txa                  
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp8
+                  pla
+                  tay
+                  lda (ptr1), y
+                  eor tmp8
+                  sta (ptr1), y  
+                  dey                
+                  bne @fast_byte_flip_xor
+                  txa               ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp8
+                  ldy #0
+                  lda (ptr1), y
+                  eor tmp8
                   sta (ptr1), y
 @fast_next_stripe:
                   lda tmp1  
@@ -641,6 +677,8 @@ draw_sprite:
                   sta (ptr3), y
                   jmp @complex_next_stripe
 @complex_byte_t2:
+                  and #$3
+                  beq @complex_byte_xor
                   and #$1
                   beq @complex_byte_and
 @complex_byte_or:
@@ -724,6 +762,44 @@ draw_sprite:
                   sta (ptr3), y
                   jmp @complex_next_stripe
 
+@complex_byte_xor:
+                  lda (ptr2), y     ; shift << into current row
+                  ldx tmp5
+@next_asl_xor:    asl
+                  dex
+                  bne @next_asl_xor
+                  eor (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y     ; shift >> into next row
+                  ldx tmp8
+@next_lsr_xor:    lsr
+                  dex
+                  bne @next_lsr_xor
+                  eor (ptr3), y
+                  sta (ptr3), y
+                  dey
+                  bne @complex_byte_xor
+
+                  lda (ptr2), y     ; Last byte
+                  ldx tmp5
+@next_asl_last_xor:   
+                  asl
+                  dex
+                  bne @next_asl_last_xor
+                  eor (ptr1), y
+                  sta (ptr1), y
+
+                  lda (ptr2), y
+                  ldx tmp8
+@next_lsr_last_xor:  
+                  lsr
+                  dex
+                  bne @next_lsr_last_xor
+                  eor (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe                 
+
 @complex_byte_flip: 
                   lda tmp9
                   bne @complex_byte_flip_t2
@@ -804,7 +880,11 @@ draw_sprite:
                   ora (ptr3), y
                   sta (ptr3), y
                   jmp @complex_next_stripe
+@complex_byte_flip_xor_jmp:
+                  jmp @complex_byte_flip_xor
 @complex_byte_flip_t2:
+                  and #$3
+                  beq @complex_byte_flip_xor_jmp
                   and #$1
                   beq @complex_byte_flip_and
 @complex_byte_flip_or:
@@ -926,6 +1006,65 @@ draw_sprite:
                   dex
                   bne @next_lsr_flip_last_and
                   and (ptr3), y
+                  sta (ptr3), y
+                  jmp @complex_next_stripe
+
+@complex_byte_flip_xor:
+                  tya
+                  pha
+                  txa
+                  tay
+                  inx
+                  lda (ptr2), y
+                  sta tmp3         ; Reuse tmp3, y not needed anymore
+                  pla
+                  tay
+
+                  txa
+                  pha
+                  lda tmp3
+                  ldx tmp5
+@next_asl_flip_xor:
+                  asl
+                  dex
+                  bne @next_asl_flip_xor
+                  eor (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip_xor:   
+                  lsr
+                  dex
+                  bne @next_lsr_flip_xor
+                  eor (ptr3), y
+                  sta (ptr3), y
+                  pla
+                  tax
+                  dey
+                  bne @complex_byte_flip_xor
+                  
+                  txa            ; Last byte
+                  tay
+                  lda (ptr2), y
+                  sta tmp3
+
+                  ldy #0
+                  ldx tmp5
+@next_asl_flip_last_xor:
+                  asl
+                  dex
+                  bne @next_asl_flip_last_xor
+                  eor (ptr1), y
+                  sta (ptr1), y
+
+                  lda tmp3
+                  ldx tmp8
+@next_lsr_flip_last_xor:
+                  lsr
+                  dex
+                  bne @next_lsr_flip_last_xor
+                  eor (ptr3), y
                   sta (ptr3), y
 
 @complex_next_stripe:

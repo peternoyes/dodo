@@ -53,6 +53,10 @@ _init:
 
 @wait_key:
                 lda $6001
+                ldx invert_buttons
+                bne @not_inverted
+                eor #$ff
+@not_inverted:                
                 pha
                 and #16
                 beq @load

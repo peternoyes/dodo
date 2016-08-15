@@ -14,6 +14,7 @@
 #define DRAW_NOP 0x0
 #define DRAW_OR  0x1
 #define DRAW_AND 0x2
+#define DRAW_XOR 0x4
 
 #define DRAW_SPRITE(sprite, x, y, w, h, f, m) draw_sprite_proto(sprite, x, y, w, h, f, m, 0)
 #define DISPLAY() display_proto(1)
