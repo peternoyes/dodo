@@ -1,17 +1,15 @@
 # Dodo
 
-![Dodo Image](dodo.jpg)
+![Dodo Image](dodo_2.jpg)
 
-Dodo is homebrew 6502 SBC computer. The name is inspired from the book DroidMaker where it is revealed that the first version Lucasfilm's EditDroid was also named Dodo. Like the first EditDroid, Dodo is extinct in its design.
+Dodo is homebrew 6502 portable game system. See the main [webpage](http://dodolabs.io) for an overview of the project.
 
-While obviously not a practical computer in today's world, building Dodo is still a fun and challenging learning experience.
+This is the main repository that hosts the hardware design and the sytem firmware (ABI). 
 
-## Goals
-- Create a handheld gaming machine
-- Utilize the 65XX series of chips where possible
-- Use a Bitmap'd display
-- Gamepad
-- 3D Print an enclosure
+## Related Repositories
+- [dodo-playground](https://github.com/peternoyes/dodo-playground) - Hosted IDE and Simulator for Dodo
+- [gododo](https://github.com/peternoyes/dodo-playground) - CLI tools for local development
+- [dodo-sim](https://github.com/peternoyes/dodo-playground) - Core simulator that powers the playground and CLI
 
 ## Links
 This project would not be possible without others having documented their 6502 projects online. The following two resources have been invaluable in learning how to build a 6502 computer.
