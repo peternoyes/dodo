@@ -14,6 +14,7 @@
 #define DRAW_NOP 0x0
 #define DRAW_OR  0x1
 #define DRAW_AND 0x2
+#define DRAW_XOR 0x4
 
 #define DRAW_SPRITE(sprite, x, y, w, h, f, m) draw_sprite_proto(sprite, x, y, w, h, f, m, 0)
 #define DISPLAY() display_proto(1)
@@ -31,8 +32,9 @@
 #define SPI_WRITE(v) spi_write_proto(v, 13)
 #define CLEAR() clear_proto(14)
 #define COPY_BACKGROUND(data, x, y, w, h, dir) copy_background_proto(data, x, y, w, h, dir, 15)
-#define DRAW_STRING(text) draw_string_proto(text, 16);
-#define SET_CURSOR(row, col) set_cursor_proto(row, col, 17);
+#define DRAW_STRING(text) draw_string_proto(text, 16)
+#define SET_CURSOR(row, col) set_cursor_proto(row, col, 17)
+#define READ_BUTTONS() read_buttons_proto(18)
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -52,6 +54,7 @@ static void (*clear_proto)(byte);
 static void (*copy_background_proto)(byte*, byte, byte, byte, byte, byte, byte);
 static void (*draw_string_proto)(char*, byte);
 static void (*set_cursor_proto)(byte, byte, byte);
+static byte (*read_buttons_proto)(byte);
 
 
 static unsigned char get_sp() {
@@ -82,6 +85,7 @@ void api_init() {
 	copy_background_proto = (void (*)(byte*, byte, byte, byte, byte, byte, byte))(*(int*)0xFFF8);
 	draw_string_proto = (void (*)(char*, byte))(*(int*)0xFFF8);
 	set_cursor_proto = (void (*)(byte, byte, byte))(*(int*)0xFFF8);
+	read_buttons_proto = (byte (*)(byte))(*(int*)0xFFF8);
 }
 
 /*

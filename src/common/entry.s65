@@ -50,9 +50,13 @@ _init:
                 jsr io_init
                 jsr text_init
 
-
+.ifdef __DEVICE__
 @wait_key:
                 lda $6001
+                ldx invert_buttons
+                bne @not_inverted
+                eor #$ff
+@not_inverted:                
                 pha
                 and #16
                 beq @load
@@ -70,6 +74,7 @@ _init:
                 jsr led_off
 
 @load:
+.endif
                 jsr load_game
 
                 jmp $1d00

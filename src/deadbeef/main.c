@@ -262,7 +262,7 @@ int main() {
 			}
 		}
 
-		keys = *((unsigned char*)0x6001);	// This should be moved to a helper function in assembly
+		keys = READ_BUTTONS();
 		if (_saucer_abducting == 0) {
 			if ((keys & 4) == 0) {
 				_saucer_x -= 3;

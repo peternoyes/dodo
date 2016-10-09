@@ -1,24 +1,12 @@
-# Dodo: 6502 Portable Game System
+# Dodo
 
-![Dodo Image](dodo.jpg) 
+![Dodo Image](dodo_2.jpg)
 
-## Background
+Dodo is a homebrew 6502 portable game system. See the main [webpage](http://dodolabs.io) for an overview of the project.
 
-Dodo is a 6502 based Portable Game System. This repository houses the system firmware, the hardware design, and a few games. Visit the [Dodo Homepage](http://www.dodolabs.io) for more background and status updates on the project. Detailed logs are posted on [Hackaday](https://hackaday.io/project/9325-dodo-6502-game-system).
+This is the main repository that hosts the hardware design and the sytem firmware (ABI). 
 
-## Software
-
-The Dodo software is all built using [cc65](https://github.com/cc65/cc65). The system firmware is written in assembly and exposes an API that is callable from C. Games are intended to be written in C, and the API is exposed through api.h. See the dodo-sample for more information on game development.
-
-## Hardware
-
-The hardware is designed in Diptrace and is undergoing major revisions. See the Dodo Homepage for more updates.
-
-## Other Repositories
-
-- [gododo](https://github.com/peternoyes/gododo): Tool written in Go
-	- Simulator, Outputs to either Console or as a Webpage
-	- Flashes games to the FRAM cartridge
-- [dodo-sample](https://github.com/peternoyes/dodo-sample) - Sample project
-
-
+## Related Repositories
+- [dodo-playground](https://github.com/peternoyes/dodo-playground) - Hosted IDE and Simulator for Dodo
+- [gododo](https://github.com/peternoyes/dodo-playground) - CLI tools for local development
+- [dodo-sim](https://github.com/peternoyes/dodo-playground) - Core simulator that powers the playground and CLI

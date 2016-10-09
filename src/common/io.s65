@@ -16,6 +16,7 @@
             .export spi_write
             .export load_game
             .export flash_game
+            .export read_buttons
 
             SPI_WREN = $06
             SPI_WRDI = $04
@@ -82,7 +83,11 @@ io_init:
             lda #0                ; Setup interrupts     
             sta irq_status
 
-            lda #$4E
+            lda PORTA             ; Check for inverted buttons
+            and #1
+            sta invert_buttons
+
+            lda #$4E              ; Setup interrupt timer
             sta T1CL
             lda #$C3
             sta T1CH
@@ -90,17 +95,10 @@ io_init:
             lda ACR
             and #%01111111
             ora #%01000000
-            ora #%00010000      ; For sound (T2 free running)
+            ora #%00010000        ; For sound (T2 free running)
             sta ACR
             lda #%11000000
             sta IER
-            
-            ; Music
-            ; Init music
-            ;lda #<music             ; put pointer to music in music_mem
-            ;sta music_mem
-            ;lda #>music
-            ;sta music_mem + 1
             
             lda #0
             sta music_mem
@@ -399,6 +397,15 @@ flash_game:
             jsr spi_write_internal
             jsr spi_disable
 
+            rts
+
+read_buttons:
+            lda PORTA
+            ldx invert_buttons
+            bne @done
+            eor #$FF
+@done:
+            ldx #0
             rts
 
 
