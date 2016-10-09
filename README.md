@@ -4,7 +4,7 @@
 
 ## Background
 
-Dodo is a 6502 based Portable Game System. This repository houses the system firmware, the hardware design, and a few games. Visit the [Dodo Homepage](http://www.dodo6502.com) for more background and status updates on the project. Detailed logs are posted on [Hackaday](https://hackaday.io/project/9325-dodo-6502-game-system).
+Dodo is a 6502 based Portable Game System. This repository houses the system firmware, the hardware design, and a few games. Visit the [Dodo Homepage](http://www.dodolabs.io) for more background and status updates on the project. Detailed logs are posted on [Hackaday](https://hackaday.io/project/9325-dodo-6502-game-system).
 
 ## Software
 
