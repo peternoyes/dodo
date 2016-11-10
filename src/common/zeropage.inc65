@@ -14,6 +14,7 @@
 .globalzp effect_mem
 .globalzp effect_index
 .globalzp effect_dec
+.globalzp effect_loop
 .globalzp tmp5
 .globalzp tmp6
 .globalzp tmp7

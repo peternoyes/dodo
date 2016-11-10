@@ -46,13 +46,13 @@ _init:
                 ldx #$ff
                 txs
 
-                jsr ssd1305_init
                 jsr io_init
+                jsr ssd1305_init
                 jsr text_init
 
 .ifdef __DEVICE__
 @wait_key:
-                lda $6001
+                lda $7F01
                 ldx invert_buttons
                 bne @not_inverted
                 eor #$ff

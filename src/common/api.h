@@ -26,7 +26,8 @@
 #define LED_OFF() led_off_proto(7)
 #define WAIT() wait_proto(8)
 #define LOAD_MUSIC(music) load_music_proto(music, 9)
-#define PLAY_EFFECT(effect) play_effect_proto(effect, 10)
+#define PLAY_EFFECT(effect) play_effect_proto(effect, 1, 10);
+#define PLAY_EFFECT_ONCE(effect) play_effect_proto(effect, 0, 10)
 #define SPI_ENABLE() spi_enable_proto(11)
 #define SPI_DISABLE() spi_disable_proto(12)
 #define SPI_WRITE(v) spi_write_proto(v, 13)
@@ -46,7 +47,7 @@ static void (*led_on_proto)(byte);
 static void (*led_off_proto)(byte);
 static void (*wait_proto)(byte);
 static void (*load_music_proto)(byte*, byte);
-static void (*play_effect_proto)(byte*, byte);
+static void (*play_effect_proto)(byte*, byte, byte);
 static void (*spi_enable_proto)(byte);
 static void (*spi_disable_proto)(byte);
 static byte (*spi_write_proto)(byte, byte);
@@ -77,7 +78,7 @@ void api_init() {
 	led_off_proto = (void (*)(byte))(*(int*)0xFFF8);
 	wait_proto = (void (*)(byte))(*(int*)0xFFF8);
 	load_music_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
-	play_effect_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
+	play_effect_proto = (void (*)(byte*, byte, byte))(*(int*)0xFFF8);
 	spi_enable_proto = (void (*)(byte))(*(int*)0xFFF8);
 	spi_disable_proto = (void (*)(byte))(*(int*)0xFFF8);
 	spi_write_proto = (byte (*)(byte, byte))(*(int*)0xFFF8);

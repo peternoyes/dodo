@@ -3,8 +3,8 @@
                   .include "zeropage.inc65"
                   .include "api.inc65"
 
-                  SSD1305_COMMAND = $4800
-                  SSD1305_DATA = $4801
+                  SSD1305_COMMAND = $7F20
+                  SSD1305_DATA = $7F21
 
                   SSD1305_SETLOWCOLUMN = $00
                   SSD1305_SETHIGHCOLUMN = $10
