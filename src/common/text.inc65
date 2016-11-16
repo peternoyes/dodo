@@ -1,3 +1,4 @@
 .import text_init
 .import draw_string
+.import draw_string_internal
 .import set_cursor

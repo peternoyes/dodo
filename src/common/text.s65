@@ -5,6 +5,7 @@
 
             	.export text_init
             	.export draw_string
+            	.export draw_string_internal
             	.export set_cursor
 
 text_init:
@@ -25,6 +26,7 @@ draw_string:
                 jsr tramp_popax
                 sta ptr1
                 stx ptr1+1        		; string
+draw_string_internal:
 
                 lda #<font
                 sta ptr2

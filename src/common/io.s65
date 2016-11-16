@@ -11,6 +11,8 @@
             .export irq_reset
             .export serial_init
             .export serial_copy
+            .export serial_get_mode
+            .export serial_ack
             .export spi_enable
             .export spi_disable
             .export spi_write
@@ -196,7 +198,7 @@ process_music:
 serial_init:
             lda #%00001011              ;No parity, no echo, no interrupt
             sta ACIA_COMMAND
-            lda #%00011111              ;1 stop bit, 8 data bits, 19200 baud
+            lda #%00011110              ;1 stop bit, 8 data bits, 9600 baud
             sta ACIA_CONTROL
             rts
 
@@ -218,10 +220,18 @@ serial_getc:
             lda ACIA_DATA
             rts
 
-serial_copy:
+serial_get_mode:
             lda #'R'
             jsr serial_putc
+            jsr serial_getc
+            rts
 
+serial_ack:
+            lda #'A'
+            jsr serial_putc
+            rts
+
+serial_copy:
             lda #$00
             sta ptr1
             lda #$1c

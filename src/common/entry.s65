@@ -50,6 +50,9 @@ _init:
                 jsr ssd1305_init
                 jsr text_init
 
+                ;jsr led_off
+
+
 .ifdef __DEVICE__
 @wait_key:
                 lda $7F01
@@ -65,12 +68,48 @@ _init:
                 beq @flash
                 jmp @wait_key
 
-@flash:
-                jsr led_off
+@flash:                
                 jsr serial_init
+                jsr serial_get_mode
+
+                cmp #'S'
+                bne @copy_game
+
+                jmp flash_system
+
+@copy_game:
+                jsr led_off
+
+                jsr clear
+
+                lda #<flashing
+                sta ptr1
+                lda #>flashing
+                sta ptr1+1
+
+                lda #0
+                sta text_row
+                sta text_col
+
+                jsr draw_string_internal
+
+                lda #<game
+                sta ptr1
+                lda #>game
+                sta ptr1+1
+
+                lda #3
+                sta text_row
+
+                jsr draw_string_internal
+
+                jsr display
+
+                jsr serial_ack
                 jsr serial_copy
                 jsr led_on
                 jsr flash_game
+                jsr serial_ack
                 jsr led_off
 
 @load:
@@ -81,3 +120,66 @@ _init:
 
 _exit:          
 end:            jmp end
+
+
+flash_system:
+                jsr clear
+
+                lda #<flashing
+                sta ptr1
+                lda #>flashing
+                sta ptr1+1
+
+                lda #0
+                sta text_row
+                sta text_col
+
+                jsr draw_string_internal
+
+                lda #<system
+                sta ptr1
+                lda #>system
+                sta ptr1+1
+
+                lda #3
+                sta text_row
+
+                jsr draw_string_internal
+
+                jsr display
+
+                ; copy flash_binary to $7C00
+
+                lda #<flash_binary
+                sta ptr1
+                lda #>flash_binary
+                sta ptr1+1
+
+                lda #$00
+                sta ptr2
+                lda #$7C
+                sta ptr2+1
+
+                ldy #0
+                ldx #3
+@loop:
+                lda (ptr1), y
+                sta (ptr2), y
+                iny
+                bne @loop
+
+                dex
+                beq @done
+
+                inc ptr1+1
+                inc ptr2+1
+                
+                jmp @loop
+
+@done:
+                jmp $7C00
+
+flash_binary:   .incbin "flash/flash"
+flashing:       .byte "Flashing...", $0
+game:           .byte "Game", $0
+system:         .byte "System", $0

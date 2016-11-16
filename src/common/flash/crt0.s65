@@ -1,0 +1,154 @@
+            .include "zeropage.inc65"
+
+            .setcpu "6502"
+
+            PORTB = $7F00
+            PORTA = $7F01
+            DDRB  = $7F02
+            DDRA  = $7F03
+            T1CL  = $7F04
+            T1CH  = $7F05
+            T1LL  = $7F06
+            T1LH  = $7F07
+            T2CL  = $7F08
+            T2CH  = $7F09
+            SR    = $7F0A
+            ACR   = $7F0B
+            PCR   = $7F0C
+            IFR   = $7F0D
+            IER   = $7F0E
+            ORAX  = $7F0F
+
+            ACIA_DATA = $7F10
+            ACIA_STATUS = $7F11
+            ACIA_COMMAND = $7F12
+            ACIA_CONTROL = $7F13
+            
+            .export _init
+            .export _exit
+
+            .segment "STARTUP"
+
+_init:
+            ; sei                
+            ; cld
+            ; clv
+            ; ldx #$ff
+            ; txs
+
+            ; cli
+
+            ; jsr serial_init
+            
+            jsr flash_eeprom
+
+            jmp ($FFFC)
+
+led_on:
+            ldx #%11000000
+            stx PORTA  
+            rts
+
+led_off:
+            ldx #%00000000
+            stx PORTA       
+            rts
+
+serial_init:
+            lda #%00001011              ;No parity, no echo, no interrupt
+            sta ACIA_COMMAND
+            lda #%00011111              ;1 stop bit, 8 data bits, 19200 baud
+            sta ACIA_CONTROL
+            rts
+
+serial_putc:
+            pha
+@wait_txd_empty:
+            lda ACIA_STATUS
+            and #$10
+            beq @wait_txd_empty
+            pla
+            sta ACIA_DATA
+            rts
+
+serial_getc:
+@wait_rxd_full:
+            lda ACIA_STATUS
+            and #$08
+            beq @wait_rxd_full
+            lda ACIA_DATA
+            rts
+
+serial_read_page:
+            lda #$00        ; use $0200 as scratch space to hold block (64 bytes)
+            sta ptr2
+            lda #$3C
+            sta ptr2+1
+
+            lda #'A'
+            jsr serial_putc
+
+            ldy #0
+@loop:
+            jsr serial_getc
+            sta (ptr2), y
+            iny
+
+            cpy #64
+            bne @loop
+
+            rts
+
+eeprom_write_page:        ; data coming from ptr2, write to ptr1
+            ldy #0
+
+@loop:
+            lda (ptr2), y
+            sta (ptr1), y
+
+            iny
+
+            cpy #64
+            bne @loop
+
+            dey           ; put y back to 63
+
+@poll:                    ; wait for write to finish
+
+            lda (ptr2), y
+            eor (ptr1), y
+            bmi @poll
+
+            rts
+
+
+flash_eeprom:
+            lda #$00
+            sta ptr1
+            lda #$80
+            sta ptr1+1
+
+@loop:
+            jsr led_on
+            jsr serial_read_page
+            jsr led_off
+            jsr eeprom_write_page
+
+            clc
+            lda ptr1
+            adc #64
+            sta ptr1
+            bcc @loop           
+
+            inc ptr1+1                
+
+            bne @loop     ; zero signifies finished
+
+            lda #'A'
+            jsr serial_putc
+
+            rts
+
+_exit:
+end:        jmp end
+
