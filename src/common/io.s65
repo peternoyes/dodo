@@ -234,7 +234,7 @@ serial_ack:
 serial_copy:
             lda #$00
             sta ptr1
-            lda #$1c
+            lda #$58
             sta ptr1+1
 
             ldy #0
@@ -315,7 +315,7 @@ spi_write_internal:
 load_game:
             lda #$00
             sta ptr1
-            lda #$1c
+            lda #$58
             sta ptr1+1
 
             jsr spi_enable
@@ -366,7 +366,7 @@ load_game:
 flash_game:
             lda #$00
             sta ptr1
-            lda #$1c
+            lda #$58
             sta ptr1+1
 
             jsr spi_enable

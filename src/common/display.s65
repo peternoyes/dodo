@@ -70,9 +70,9 @@ ssd1305_init:
                   dco SSD1305_SETSTARTLINE, $0       ; line #0
                   dc $2E                             ; Stop scrolling
                   dc SSD1305_SETCONTRAST             ; $81
-                  dc $32
+                  dc $00
                   dc SSD1305_SETBRIGHTNESS           ; $82
-                  dc $80
+                  dc $00
                   dco SSD1305_SEGREMAP, $1
                   dc SSD1305_NORMALDISPLAY           ; $A6
                   dc SSD1305_SETMULTIPLEX            ; $A8
@@ -84,7 +84,7 @@ ssd1305_init:
                   dc $40
                   dc SSD1305_SETDISPLAYCLOCKDIV      ; $D5
                   dc $f0
-                  dc SSD1305_SETAREACOLOR
+                  dc SSD1305_SETAREACOLOR            ; Low power mode
                   dc $05
                   dc SSD1305_SETPRECHARGE            ; $d9
                   dc $F1
@@ -102,7 +102,7 @@ ssd1305_init:
 splash:
                   lda #$00
                   sta ptr1
-                  lda #$3C
+                  lda #$78
                   sta ptr1+1
 
                   lda #<dodo
@@ -360,7 +360,7 @@ clear_sprite:
                   rts                         
 
 
-; drawing to #3C00
+; drawing to #7800
 ; void drawSprite(unsigned char* sprite, unsigned char x, unsigned char y, unsigned char w, unsigned char h, unsigned char flip)
 draw_sprite:         
                   jsr tramp_popa    ; mode
@@ -1344,13 +1344,13 @@ abs:
                   rts
                   
 
-; Drawn from $3C00
+; Drawn from $7800
 display:              
                   clc
                   clv   
                   lda #$00
                   sta ptr1
-                  lda #$3C
+                  lda #$78
                   sta ptr1 + 1
 
                   ldx #$0
@@ -1395,7 +1395,7 @@ clear:
                   clv
                   lda #$00
                   sta ptr1
-                  lda #$3C
+                  lda #$78
                   sta ptr1+1
 
                   lda #$0
@@ -1414,7 +1414,7 @@ clear:
 
 
 page_mem_low:     .byte $00, $80, $00, $80, $00, $80, $00, $80
-page_mem_high:    .byte $3C, $3C, $3D, $3D, $3E, $3E, $3F, $3F
+page_mem_high:    .byte $78, $78, $79, $79, $7A, $7A, $7B, $7B
 
 shift_table:      .byte 1, 2, 4, 8, 16, 32, 64, 128
 
