@@ -2,6 +2,7 @@
 .import display
 .import draw_sprite
 .import clear_sprite
+.import get_pixel
 .import set_pixel
 .import draw_line
 .import clear

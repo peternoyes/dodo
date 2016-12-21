@@ -43,6 +43,7 @@
                   .export ssd1305_init
                   .export display      
                   .export draw_sprite
+                  .export get_pixel
                   .export set_pixel
                   .export clear_sprite  
                   .export draw_line    
@@ -131,6 +132,42 @@ splash:
                   jsr display
                   rts
 
+;void getPixel(unsigned char x, unsigned char y)
+get_pixel:
+                  jsr tramp_popa
+                  sta tmp1            ; y
+                  jsr tramp_popa
+                  sta tmp2            ; x
+                  
+                  lda #<shift_table
+                  sta ptr2
+                  lda #>shift_table
+                  sta ptr2+1
+                    
+                  lda tmp1            ; calculate %
+                  pha
+                  and #$07
+                  tay
+                  lda (ptr2), y
+                  sta tmp4            ; store % in tmp4
+                  pla
+                  lsr
+                  lsr
+                  lsr                 ; page now in a
+                    
+                  tax
+                  lda page_mem_low, x
+                  sta ptr1
+                  lda page_mem_high, x
+                  sta ptr1+1
+                    
+                  ldy tmp2
+                  lda (ptr1), y
+                  and tmp4
+                  beq @done
+                  lda #1
+@done:
+                  rts
 
 ;void setPixel(unsigned char x, unsigned char y, unsigned char c)
 set_pixel:

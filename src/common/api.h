@@ -36,6 +36,7 @@
 #define DRAW_STRING(text) draw_string_proto(text, 16)
 #define SET_CURSOR(row, col) set_cursor_proto(row, col, 17)
 #define READ_BUTTONS() read_buttons_proto(18)
+#define GET_PIXEL(x, y) get_pixel_proto(x, y, 19)
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -56,6 +57,7 @@ static void (*copy_background_proto)(byte*, byte, byte, byte, byte, byte, byte);
 static void (*draw_string_proto)(char*, byte);
 static void (*set_cursor_proto)(byte, byte, byte);
 static byte (*read_buttons_proto)(byte);
+static byte (*get_pixel_proto)(byte, byte, byte);
 
 
 static unsigned char get_sp() {
@@ -87,6 +89,7 @@ void api_init() {
 	draw_string_proto = (void (*)(char*, byte))(*(int*)0xFFF8);
 	set_cursor_proto = (void (*)(byte, byte, byte))(*(int*)0xFFF8);
 	read_buttons_proto = (byte (*)(byte))(*(int*)0xFFF8);
+	get_pixel_proto = (byte (*)(byte, byte, byte))(*(int*)0xFFF8);
 }
 
 /*
