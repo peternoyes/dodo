@@ -1,6 +1,6 @@
 # Dodo
 
-![Dodo Image](dodo_2.jpg)
+![Dodo Image](graphics/dodo_draw_large.png)
 
 Dodo is a homebrew 6502 portable game system. See the main [webpage](http://dodolabs.io) for an overview of the project.
 
