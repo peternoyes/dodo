@@ -52,30 +52,100 @@ _init:
 
                 jsr led_off
 
+wait_buttons:
+                jsr serial_init
 
-.ifdef __DEVICE__
 @wait_key:
-                lda $7F01
-                ldx invert_buttons
-                bne @not_inverted
-                eor #$ff
-@not_inverted:                
+                jsr serial_getc_nowait
+                cpx #1
+                beq @handle_command
+
+                jsr read_buttons        
                 pha
                 and #16
-                beq @load
+                beq @load_hop
                 pla
                 and #32
-                beq @flash
+                beq @info
                 jmp @wait_key
 
-@flash:                
-                jsr serial_init
-                jsr serial_get_mode
+@load_hop:
+                jmp @load
 
+
+@info:
+                jsr clear
+
+                lda #<info_1
+                sta ptr1
+                lda #>info_1
+                sta ptr1+1
+
+                lda #0
+                sta text_row
+                sta text_col
+
+                jsr draw_string_internal
+
+                lda #<info_2
+                sta ptr1
+                lda #>info_2
+                sta ptr1+1
+
+                lda #2
+                sta text_row
+
+                jsr draw_string_internal
+
+                jsr display
+
+@wait_key_down_info:
+                jsr read_buttons
+                and #16
+                bne @wait_key_down_info
+
+@wait_key_up_info:
+                jsr read_buttons
+                and #16
+                beq @wait_key_up_info
+
+                jsr splash
+
+                jmp @wait_key
+
+@handle_command:
                 cmp #'S'
-                bne @copy_game
+                beq @flash_system_hop
 
+                cmp #'V'
+                beq @return_version
+
+                cmp #'P'
+                beq @return_product
+
+                cmp #'G'
+                beq @copy_game
+
+                jmp @wait_key
+
+@flash_system_hop:
                 jmp flash_system
+
+@return_version:
+                jsr led_on
+                lda #<version
+                ldx #>version
+                jsr serial_put_string
+                jsr led_off
+                jmp @wait_key
+
+@return_product:
+                jsr led_on
+                lda #<product
+                ldx #>product
+                jsr serial_put_string
+                jsr led_off
+                jmp @wait_key
 
 @copy_game:
                 jsr led_off
@@ -113,13 +183,29 @@ _init:
                 jsr led_off
 
 @load:
-.endif
+                jsr clear
+
+                lda #<loading
+                sta ptr1
+                lda #>loading
+                sta ptr1+1
+
+                lda #3
+                sta text_row
+                lda #5
+                sta text_col
+
+                jsr draw_string_internal
+
+                jsr display
+
                 jsr load_game
 
                 jmp $5900
 
 _exit:          
 end:            jmp end
+
 
 
 flash_system:
@@ -181,5 +267,10 @@ flash_system:
 
 flash_binary:   .incbin "flash/flash"
 flashing:       .byte "Flashing...", $0
+loading:        .byte "Loading...", $0
 game:           .byte "Game", $0
 system:         .byte "System", $0
+info_1:         .byte "Version: 1.0.0", $0
+info_2:         .byte "Product: Kit", $0
+version:        .byte "1.0.0", $0
+product:        .byte "kit", $0

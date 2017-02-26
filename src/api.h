@@ -3,6 +3,10 @@
 
 #define byte unsigned char
 
+#define MAJOR 1
+#define MINOR 0
+#define RELEASE 0
+
 #define SPI_WREN  0x06
 #define SPI_WRDI  0x04
 #define SPI_RDSR  0x05
@@ -37,6 +41,7 @@
 #define SET_CURSOR(row, col) set_cursor_proto(row, col, 17)
 #define READ_BUTTONS() read_buttons_proto(18)
 #define GET_PIXEL(x, y) get_pixel_proto(x, y, 19)
+#define GET_VERSION(version) get_version_proto(version, 20);
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -58,6 +63,7 @@ static void (*draw_string_proto)(char*, byte);
 static void (*set_cursor_proto)(byte, byte, byte);
 static byte (*read_buttons_proto)(byte);
 static byte (*get_pixel_proto)(byte, byte, byte);
+static void (*get_version_proto)(byte*, byte);
 
 
 static unsigned char get_sp() {
@@ -66,6 +72,7 @@ static unsigned char get_sp() {
 }
 
 void api_init() {
+	byte* version = malloc(3);
 	byte* sp_ptr = (byte*)get_sp();
 	__A__ = (byte)sp_ptr;
 	asm("sta $0");
@@ -90,51 +97,22 @@ void api_init() {
 	set_cursor_proto = (void (*)(byte, byte, byte))(*(int*)0xFFF8);
 	read_buttons_proto = (byte (*)(byte))(*(int*)0xFFF8);
 	get_pixel_proto = (byte (*)(byte, byte, byte))(*(int*)0xFFF8);
-}
+	get_version_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
 
-/*
-void getSpiDevice(unsigned char* manufacturer, unsigned char* density, unsigned char* product) {
-	SPI_ENABLE();
-	SPI_WRITE(SPI_RDID);
-	//*manufacturer = spi_write(0);
-	SPI_WRITE_R(0, (*manufacturer));
-	SPI_WRITE(0);
-	//*density = spi_write(0);
-	//*product = spi_write(0);
-	SPI_WRITE_R(0, (*density));
-	SPI_WRITE_R(0, (*product));
-	SPI_DISABLE();
-}
+	GET_VERSION(version);
 
-unsigned char spiRead(unsigned int a) {
-	unsigned char v;
-	SPI_ENABLE();
-	SPI_WRITE(SPI_READ);
-	SPI_WRITE(((unsigned char)(a >> 8)));
-	SPI_WRITE(((unsigned char)(a & 0xFF)));
-	//v = spi_write(0);
-	SPI_WRITE_R(0, v);
-	SPI_DISABLE();
-	return v;
-}
+	if (version[0] < MAJOR) {
+		CLEAR();
+		SET_CURSOR(3, 1);
+		DRAW_STRING("Upgrade Firmware");
+		DISPLAY();
 
-void spiWriteEnable(unsigned char e) {
-	SPI_ENABLE();
-	if (e == 1) {
-		SPI_WRITE(SPI_WREN);
-	} else {
-		SPI_WRITE(SPI_WRDI);
+		for (;;) {
+
+		}
 	}
-	SPI_DISABLE();
-}
 
-void spiWrite(unsigned int a, unsigned char v) {
-	SPI_ENABLE();
-	SPI_WRITE(SPI_WRIT);
-	SPI_WRITE(((byte)(a >> 8)));
-	SPI_WRITE(((byte)(a & 0xFF)));
-	SPI_WRITE(v);
-	SPI_DISABLE();
-}*/
+	free(version);
+}
 
 #endif

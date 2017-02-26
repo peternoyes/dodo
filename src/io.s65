@@ -11,8 +11,9 @@
             .export irq_reset
             .export serial_init
             .export serial_copy
-            .export serial_get_mode
             .export serial_ack
+            .export serial_getc_nowait
+            .export serial_put_string
             .export spi_enable
             .export spi_disable
             .export spi_write
@@ -210,6 +211,7 @@ serial_putc:
             beq @wait_txd_empty
             pla
             sta ACIA_DATA
+            jsr serial_bug_delay
             rts
 
 serial_getc:
@@ -220,15 +222,67 @@ serial_getc:
             lda ACIA_DATA
             rts
 
-serial_get_mode:
-            lda #'R'
-            jsr serial_putc
-            jsr serial_getc
+serial_getc_nowait:
+            lda ACIA_STATUS
+            and #$08
+            beq @not_ready
+            lda ACIA_DATA
+            ldx #1
+            rts
+@not_ready:
+            lda #0
+            ldx #0
             rts
 
 serial_ack:
             lda #'A'
             jsr serial_putc
+            rts
+
+serial_put_string:
+            sta ptr1
+            stx ptr1+1
+
+            ldy #0
+
+@loop:
+            lda (ptr1), y    ; Return at \0
+            beq @done
+
+            jsr serial_putc
+
+            iny
+            bne @loop
+
+            inc ptr1+1
+            jmp @loop
+
+@done:
+            lda #0
+            jsr serial_putc
+            rts
+
+serial_bug_delay:
+            pha
+            tya
+            pha
+            txa
+            pha
+
+            ldy #2
+@delay:     ldx #$68
+@delay_in:  dex
+            bne @delay_in
+
+            dey
+            bne @delay
+
+            pla
+            tax
+            pla
+            tay
+            pla
+
             rts
 
 serial_copy:

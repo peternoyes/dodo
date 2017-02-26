@@ -9,7 +9,7 @@ flash_code:
 
 # Compilation of assembler files
 %.o: %.s65
-	ca65 --cpu 6502 -D $(TARGET) -o $@ -l $(@:.o=.lst) $<
+	ca65 --cpu 6502 -o $@ -l $(@:.o=.lst) $<
 
 all: firmware
 

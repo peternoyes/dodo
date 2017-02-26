@@ -1,4 +1,5 @@
 .import ssd1305_init
+.import splash
 .import display
 .import draw_sprite
 .import clear_sprite
