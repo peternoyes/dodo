@@ -2,7 +2,6 @@
 .import irq_reset
 .import serial_init
 .import serial_copy
-;.import serial_get_mode
 .import serial_ack
 .import serial_getc_nowait
 .import serial_put_string
