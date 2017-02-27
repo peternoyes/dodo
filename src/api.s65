@@ -6,7 +6,7 @@
 
 					MAJOR = $1
 					MINOR = $0
-					REVISION = $0
+					REVISION = $1
 
 					.setcpu "6502"
 
@@ -85,6 +85,48 @@ get_version:
 
 					rts
 
+version_check:
+       	         	jsr tramp_popa
+                  	sta tmp3          ; revision
+                  	jsr tramp_popa
+                  	sta tmp2          ; minor
+                  	jsr tramp_popa
+                  	sta tmp1
 
-funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write, <clear, <copy_background, <draw_string, <set_cursor, <read_buttons, <get_pixel, <get_version
-funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write, >clear, >copy_background, >draw_string, >set_cursor, >read_buttons, >get_pixel, >get_version
+                  	lda #MAJOR
+                  	cmp tmp1
+                  	beq @check_minor		; The major version must match exactly, v2 will not load games with minimum ot v1 support
+                  	jmp @failed_version
+
+@check_minor:
+                  	lda #MINOR
+                  	cmp tmp2
+                  	bcs @success
+                  	jmp @failed_version
+
+@success:
+                  	rts
+
+@failed_version:
+					jsr clear
+
+		            lda #<unsupported
+		            sta ptr1
+		            lda #>unsupported
+		            sta ptr1+1
+
+		            lda #3
+		            sta text_row
+		            lda #4
+		            sta text_col
+
+		            jsr draw_string_internal
+
+					jsr display
+
+@loop:
+					jmp @loop		; Spin forever, they must reset to get out of this state
+
+unsupported:		.byte "Unsupported", $0
+funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write, <clear, <copy_background, <draw_string, <set_cursor, <read_buttons, <get_pixel, <get_version, <version_check
+funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write, >clear, >copy_background, >draw_string, >set_cursor, >read_buttons, >get_pixel, >get_version, >version_check

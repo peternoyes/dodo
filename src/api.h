@@ -3,9 +3,10 @@
 
 #define byte unsigned char
 
+// Specify version compiled against. Semantic versioning enforcement takes place in CHECK_VERSION
 #define MAJOR 1
 #define MINOR 0
-#define RELEASE 0
+#define REVISION 1
 
 #define SPI_WREN  0x06
 #define SPI_WRDI  0x04
@@ -42,6 +43,7 @@
 #define READ_BUTTONS() read_buttons_proto(18)
 #define GET_PIXEL(x, y) get_pixel_proto(x, y, 19)
 #define GET_VERSION(version) get_version_proto(version, 20);
+#define CHECK_VERSION(major, minor, revision) check_version_proto(major, minor, revision, 21)
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -64,6 +66,7 @@ static void (*set_cursor_proto)(byte, byte, byte);
 static byte (*read_buttons_proto)(byte);
 static byte (*get_pixel_proto)(byte, byte, byte);
 static void (*get_version_proto)(byte*, byte);
+static void (*check_version_proto)(byte, byte, byte, byte);
 
 
 static unsigned char get_sp() {
@@ -72,7 +75,6 @@ static unsigned char get_sp() {
 }
 
 void api_init() {
-	byte* version = malloc(3);
 	byte* sp_ptr = (byte*)get_sp();
 	__A__ = (byte)sp_ptr;
 	asm("sta $0");
@@ -98,21 +100,9 @@ void api_init() {
 	read_buttons_proto = (byte (*)(byte))(*(int*)0xFFF8);
 	get_pixel_proto = (byte (*)(byte, byte, byte))(*(int*)0xFFF8);
 	get_version_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
+	check_version_proto = (void (*)(byte, byte, byte, byte))(*(int*)0xFFF8);
 
-	GET_VERSION(version);
-
-	if (version[0] < MAJOR) {
-		CLEAR();
-		SET_CURSOR(3, 1);
-		DRAW_STRING("Upgrade Firmware");
-		DISPLAY();
-
-		for (;;) {
-
-		}
-	}
-
-	free(version);
+	CHECK_VERSION(MAJOR, MINOR, REVISION);	// This will spin forever if there is a version mismatch
 }
 
 #endif
