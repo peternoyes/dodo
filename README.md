@@ -8,5 +8,5 @@ This is the main repository that hosts the hardware design and the sytem firmwar
 
 ## Related Repositories
 - [dodo-playground](https://github.com/peternoyes/dodo-playground) - Hosted IDE and Simulator for Dodo
-- [gododo](https://github.com/peternoyes/dodo-playground) - CLI tools for local development
-- [dodo-sim](https://github.com/peternoyes/dodo-playground) - Core simulator that powers the playground and CLI
+- [gododo](https://github.com/peternoyes/gododo) - CLI tools for local development
+- [dodo-sim](https://github.com/peternoyes/dodo-sim) - Core simulator that powers the playground and CLI
