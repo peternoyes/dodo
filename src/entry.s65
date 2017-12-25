@@ -201,12 +201,10 @@ wait_buttons:
 
                 jsr load_game
 
-                jmp $5900
+                jsr $5900
 
-_exit:          
-end:            jmp end
-
-
+_exit:
+                jmp _init          
 
 flash_system:
                 jsr clear
@@ -270,7 +268,7 @@ flashing:       .byte "Flashing...", $0
 loading:        .byte "Loading...", $0
 game:           .byte "Game", $0
 system:         .byte "System", $0
-info_1:         .byte "Version: 1.0.1", $0
+info_1:         .byte "Version: 1.1.0_b1", $0
 info_2:         .byte "Product: Kit", $0
-version:        .byte "1.0.1", $0
+version:        .byte "1.1.0", $0
 product:        .byte "kit", $0
