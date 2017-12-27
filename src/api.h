@@ -44,6 +44,8 @@
 #define GET_PIXEL(x, y) get_pixel_proto(x, y, 19)
 #define GET_VERSION(version) get_version_proto(version, 20);
 #define CHECK_VERSION(major, minor, revision) check_version_proto(major, minor, revision, 21)
+#define LOAD_PERSISTENT(buffer) load_persistent_proto(buffer, 22);
+#define SAVE_PERSISTENT(buffer) save_persistent_proto(buffer, 23);
 
 static void (*draw_sprite_proto)(byte*, byte, byte, byte, byte, byte, byte, byte);
 static void (*display_proto)(byte);
@@ -67,7 +69,8 @@ static byte (*read_buttons_proto)(byte);
 static byte (*get_pixel_proto)(byte, byte, byte);
 static void (*get_version_proto)(byte*, byte);
 static void (*check_version_proto)(byte, byte, byte, byte);
-
+static void (*load_persistent_proto)(byte*, byte);
+static void (*save_persistent_proto)(byte*, byte);
 
 static unsigned char get_sp() {
 	asm("lda #sp");
@@ -101,6 +104,8 @@ void api_init() {
 	get_pixel_proto = (byte (*)(byte, byte, byte))(*(int*)0xFFF8);
 	get_version_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
 	check_version_proto = (void (*)(byte, byte, byte, byte))(*(int*)0xFFF8);
+	load_persistent_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
+	save_persistent_proto = (void (*)(byte*, byte))(*(int*)0xFFF8);
 
 	CHECK_VERSION(MAJOR, MINOR, REVISION);	// This will spin forever if there is a version mismatch
 }

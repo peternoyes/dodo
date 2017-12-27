@@ -20,6 +20,8 @@
             .export load_game
             .export flash_game
             .export read_buttons
+            .export load_persistent
+            .export save_persistent
 
             SPI_WREN = $06
             SPI_WRDI = $04
@@ -485,3 +487,95 @@ read_buttons:
             rts
 
 
+load_persistent:
+            jsr tramp_popax
+            sta ptr1
+            stx ptr1+1
+            
+            jsr spi_enable
+
+            lda #SPI_READ
+            jsr spi_write_internal
+
+            lda #0
+            jsr spi_write_internal
+            lda #4
+            jsr spi_write_internal
+
+            ldy #0
+            ldx #64
+
+@loop:
+            tya
+            pha
+            txa
+            pha
+
+            lda #0
+            jsr spi_write_internal
+            sta tmp1              
+
+            pla
+            tax
+            pla
+            tay
+
+            lda tmp1
+            sta (ptr1), y
+
+            iny
+            dex
+            bne @loop
+
+            jsr spi_disable
+            rts
+
+save_persistent:
+            jsr tramp_popax
+            sta ptr1
+            stx ptr1+1
+
+            jsr spi_enable
+            lda #SPI_WREN
+            jsr spi_write_internal
+            jsr spi_disable
+
+            jsr spi_enable
+
+            lda #SPI_WRIT
+            jsr spi_write_internal
+
+            lda #0
+            jsr spi_write_internal
+            lda #4
+            jsr spi_write_internal
+
+            ldy #0
+            ldx #64
+
+@loop:
+            tya
+            pha
+            txa
+            pha
+
+            lda (ptr1), y
+            jsr spi_write_internal
+
+            pla
+            tax
+            pla
+            tay
+
+            iny
+            dex
+            bne @loop
+
+            jsr spi_disable
+
+            jsr spi_enable
+            lda #SPI_WRDI
+            jsr spi_write_internal
+            jsr spi_disable
+
+            rts

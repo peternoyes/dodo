@@ -128,5 +128,5 @@ version_check:
 					jmp @loop		; Spin forever, they must reset to get out of this state
 
 unsupported:		.byte "Unsupported", $0
-funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write, <clear, <copy_background, <draw_string, <set_cursor, <read_buttons, <get_pixel, <get_version, <version_check
-funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write, >clear, >copy_background, >draw_string, >set_cursor, >read_buttons, >get_pixel, >get_version, >version_check
+funcs_low: 			.byte <draw_sprite, <display, <clear_sprite, <set_pixel, <draw_line, <delay_ms, <led_on, <led_off, <wait, <load_music, <play_effect, <spi_enable, <spi_disable, <spi_write, <clear, <copy_background, <draw_string, <set_cursor, <read_buttons, <get_pixel, <get_version, <version_check, <load_persistent, <save_persistent
+funcs_high:			.byte >draw_sprite, >display, >clear_sprite, >set_pixel, >draw_line, >delay_ms, >led_on, >led_off, >wait, >load_music, >play_effect, >spi_enable, >spi_disable, >spi_write, >clear, >copy_background, >draw_string, >set_cursor, >read_buttons, >get_pixel, >get_version, >version_check, >load_persistent, >save_persistent

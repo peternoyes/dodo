@@ -16,3 +16,5 @@
 .import load_game
 .import flash_game
 .import read_buttons
+.import load_persistent
+.import save_persistent
