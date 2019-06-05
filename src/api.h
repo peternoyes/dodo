@@ -6,7 +6,7 @@
 // Specify version compiled against. Semantic versioning enforcement takes place in CHECK_VERSION
 #define MAJOR 1
 #define MINOR 0
-#define REVISION 1
+#define REVISION 2
 
 #define SPI_WREN  0x06
 #define SPI_WRDI  0x04
