@@ -67,8 +67,15 @@
                   .code
 ssd1305_init:
                   dc SSD1305_DISPLAYOFF              ; $AE
-                  dco SSD1305_SETLOWCOLUMN, $4       ; low col = 0  (This doesn't seem right)
-                  dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 0
+.if .defined(KITA)
+                  dco SSD1305_SETLOWCOLUMN, $4       ; low col = 4
+                  dco SSD1305_SETHIGHCOLUMN, $4      ; hi col = 4
+.elseif .defined(KITB)
+                  dco SSD1305_SETLOWCOLUMN, $0       ; low col = 0
+                  dco SSD1305_SETHIGHCOLUMN, $0      ; hi col = 0
+.else
+.error "Must define KITA or KITB"
+.endif
                   dco SSD1305_SETSTARTLINE, $0       ; line #0
                   dc $2E                             ; Stop scrolling
                   dc SSD1305_SETCONTRAST             ; $81
@@ -1398,7 +1405,13 @@ display:
                   stx ptr2
                   adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
+.if .defined(KITA)
                   dc $02
+.elseif .defined(KITB)
+                  dc $00
+.else
+.error "Must define KITA or KITB"
+.endif
                   dc $10
 
                   ; loop y < 128
@@ -1413,7 +1426,13 @@ display:
                   stx ptr2
                   adc ptr2
                   sta SSD1305_COMMAND       ; Set Page
+.if .defined(KITA)
                   dc $02
+.elseif .defined(KITB)
+                  dc $00
+.else
+.error "Must define KITA or KITB"
+.endif
                   dc $10
                   ; loop y < 256
 @byte_loop2:      lda (ptr1), y

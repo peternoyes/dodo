@@ -268,7 +268,19 @@ flashing:       .byte "Flashing...", $0
 loading:        .byte "Loading...", $0
 game:           .byte "Game", $0
 system:         .byte "System", $0
-info_1:         .byte "Version: 1.1.0_b2", $0
+info_1:         .byte "Version: 1.1.0_b3", $0
+.if .defined(KITA)
 info_2:         .byte "Product: Kit", $0
+.elseif .defined(KITB)
+info_2:         .byte "Product: Kit(B)", $0
+.else
+.error "Must define KITA or KITB"
+.endif
 version:        .byte "1.1.0", $0
+.if .defined(KITA)
 product:        .byte "kit", $0
+.elseif .defined(KITB)
+product:        .byte "kitb", $0
+.else
+.error "Must define KITA or KITB"
+.endif
