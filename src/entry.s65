@@ -41,6 +41,7 @@ irq:
 
 _init:
                 sei                
+                clc
                 cld
                 clv
                 ldx #$ff
